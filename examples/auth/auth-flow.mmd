@@ -1,0 +1,18 @@
+flowchart TD
+  %% @step:start user-entry
+  User[User] --> Login[Login Page]
+  %% @step:end user-entry
+
+  %% @step:start credential-check
+  Login --> Auth{Credentials valid?}
+  Auth -->|no| Login
+  %% @step:end credential-check
+
+  %% @step:start token-issue
+  Auth -->|yes| Token[Issue JWT]
+  Token --> Store[(Session store)]
+  %% @step:end token-issue
+
+  %% @step:start app-entry
+  Token --> App[App Shell]
+  %% @step:end app-entry

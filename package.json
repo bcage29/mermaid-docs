@@ -1,0 +1,74 @@
+{
+  "name": "mermaid-docs",
+  "version": "0.1.0",
+  "description": "Mermaid diagram viewer and step-by-step documentation tool, with an MCP server for coding agents",
+  "author": "Brennen Cage",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bcage29/mermaid-docs.git"
+  },
+  "homepage": "https://github.com/bcage29/mermaid-docs#readme",
+  "bugs": {
+    "url": "https://github.com/bcage29/mermaid-docs/issues"
+  },
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "mermaid-docs": "dist/cli/index.js",
+    "mmdocs": "dist/cli/index.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/core/index.d.ts",
+      "import": "./dist/core/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "mermaid",
+    "documentation",
+    "diagram",
+    "mcp",
+    "viewer"
+  ],
+  "scripts": {
+    "prepublishOnly": "npm run typecheck && npm run build && npm test",
+    "build": "npm run build:node && npm run build:web",
+    "build:node": "tsup",
+    "build:web": "vite build",
+    "dev": "vite",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "chokidar": "^4.0.3",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "mermaid": "^11.17.2",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-markdown": "^10.1.0",
+    "react-resizable-panels": "^4.12.3",
+    "react-zoom-pan-pinch": "^4.2.0",
+    "rehype-highlight": "^7.0.2",
+    "remark-gfm": "^4.0.1",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vite": "^8.2.2",
+    "vitest": "^5.0.0"
+  }
+}
