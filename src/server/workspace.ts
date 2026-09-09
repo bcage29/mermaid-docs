@@ -1,5 +1,5 @@
-import { readFile, readdir, stat, writeFile } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import { open, readFile, readdir, stat, unlink, writeFile, type FileHandle } from 'node:fs/promises';
+import { existsSync, lstatSync } from 'node:fs';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { buildDiagram } from '../core/diagramModel.js';
 import type { Diagram } from '../core/types.js';
@@ -84,8 +84,25 @@ export function duplicateNames(refs: DiagramRef[]): Map<string, DiagramRef[]> {
   return byName;
 }
 
+function assertNoSymlinks(root: string, filePath: string): void {
+  let current = resolve(root);
+  for (const part of relative(current, filePath).split(sep)) {
+    current = join(current, part);
+    let info;
+    try {
+      info = lstatSync(current);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return;
+      throw error;
+    }
+    if (info.isSymbolicLink()) {
+      throw new Error('Symbolic links are not allowed in diagram paths.');
+    }
+  }
+}
+
 /**
- * Resolve a diagram id to an absolute path, refusing anything that escapes the root.
+ * Resolve a diagram id, rejecting traversal and symlinks in either sibling path.
  * The id comes from HTTP and from agent tool calls, so it is untrusted.
  */
 export function resolveDiagramPath(root: string, id: string): string {
@@ -95,6 +112,8 @@ export function resolveDiagramPath(root: string, id: string): string {
     throw new Error(`Diagram id "${id}" resolves outside the workspace root.`);
   }
   if (!/\.mmd$/i.test(abs)) throw new Error(`Diagram id "${id}" must name a .mmd file.`);
+  assertNoSymlinks(root, abs);
+  assertNoSymlinks(root, docPathFor(abs));
   return abs;
 }
 
@@ -115,6 +134,35 @@ export async function loadDiagram(root: string, id: string): Promise<Diagram> {
 export interface WriteResult {
   mmdPath: string;
   docPath: string;
+}
+
+export async function createDiagram(
+  root: string,
+  id: string,
+  files: { mmd: string; md: string },
+): Promise<WriteResult> {
+  const mmdPath = resolveDiagramPath(root, id);
+  const docPath = docPathFor(mmdPath);
+  await ensureDirFor(mmdPath);
+  const created: { path: string; handle: FileHandle; content: string }[] = [];
+  try {
+    try {
+      for (const [path, content] of [[mmdPath, files.mmd], [docPath, files.md]] as const) {
+        const handle = await open(path, 'wx');
+        created.push({ path, handle, content });
+      }
+      for (const file of created) await file.handle.writeFile(file.content, 'utf8');
+    } finally {
+      await Promise.all(created.map((file) => file.handle.close()));
+    }
+  } catch (error) {
+    await Promise.all(created.map((file) => unlink(file.path)));
+    if ((error as NodeJS.ErrnoException).code === 'EEXIST') {
+      throw new Error('The diagram or its documentation already exists. Neither file was overwritten.');
+    }
+    throw error;
+  }
+  return { mmdPath, docPath };
 }
 
 /** Write both files for a diagram. Only the parts provided are touched. */

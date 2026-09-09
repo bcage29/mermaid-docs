@@ -7,7 +7,7 @@ import messagingMd from '../../examples/sequence/messaging.md?raw';
 import agenticRagMmd from '../../examples/architecture/agentic-rag.mmd?raw';
 import agenticRagMd from '../../examples/architecture/agentic-rag.md?raw';
 
-export const STATIC_DEMO = import.meta.env.VITE_MMDOCS_STATIC === 'true';
+export const STATIC_DEMO = import.meta.env.VITE_MERMAID_DOCS_STATIC === 'true';
 
 const examples = [
   buildDiagram({

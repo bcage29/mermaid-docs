@@ -14,13 +14,13 @@ import { diagramName } from './src/core/route.js';
  * listening socket, so a server of ours would be left holding its port with nothing to
  * release it.
  *
- * Workspace: MMDOCS_ROOT, defaulting to the checked-in examples.
+ * Workspace: MERMAID_DOCS_ROOT, defaulting to the checked-in examples.
  */
-export function mmdocsApi(): Plugin {
-  const root = resolve(process.env.MMDOCS_ROOT ?? 'examples');
+export function mermaidDocsApi(): Plugin {
+  const root = resolve(process.env.MERMAID_DOCS_ROOT ?? 'examples');
 
   return {
-    name: 'mmdocs-api',
+    name: 'mermaid-docs-api',
     apply: 'serve',
     configureServer(server) {
       const api = createApi(root);

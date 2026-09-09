@@ -219,7 +219,7 @@ export function App() {
       </header>
 
       <SplitLayout
-        id={`mmdocs:${activeName ?? 'none'}`}
+        id={`mermaid-docs:${activeName ?? 'none'}`}
         orientation="horizontal"
         panelIds={['sidebar', 'center', 'docs']}
         className="app-body"
@@ -256,7 +256,7 @@ export function App() {
 
         <Panel defaultSize="52" minSize="20" id="center">
           <SplitLayout
-            id={`mmdocs:center:${activeName ?? 'none'}`}
+            id={`mermaid-docs:center:${activeName ?? 'none'}`}
             orientation="vertical"
             panelIds={showSource ? ['canvas', 'source'] : ['canvas']}
             className="center-group"

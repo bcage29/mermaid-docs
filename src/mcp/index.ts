@@ -7,7 +7,6 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
 import { basename } from 'node:path';
-import { writeFile } from 'node:fs/promises';
 import { INSTRUCTIONS } from './instructions.js';
 import { deleteStep, reorderSteps, scaffoldDoc, setStep } from '../core/mutate.js';
 import { computeCoverage, validateDiagram } from '../core/validate.js';
@@ -17,10 +16,9 @@ import { buildHash, diagramName } from '../core/route.js';
 import { startServer } from '../server/http.js';
 import { watchWorkspace } from '../server/watch.js';
 import {
-  ensureDirFor,
+  createDiagram,
   loadDiagram,
   readDiagramFiles,
-  resolveDiagramPath,
   scanDiagrams,
   writeDiagram,
 } from '../server/workspace.js';
@@ -47,10 +45,10 @@ export async function runMcp({ root }: McpOptions): Promise<void> {
   const watcher = watchWorkspace(root, (ids) => {
     for (const id of ids) http.broadcast('changed', { name: diagramName(id) });
   });
-  process.stderr.write(`mmdocs viewer: ${http.url}\n`);
+  process.stderr.write(`mermaid-docs viewer: ${http.url}\n`);
 
   const server = new McpServer(
-    { name: 'mmdocs', version: '0.1.0' },
+    { name: 'mermaid-docs', version: '0.1.0' },
     { instructions: INSTRUCTIONS },
   );
 
@@ -161,7 +159,7 @@ export async function runMcp({ root }: McpOptions): Promise<void> {
     'create_diagram',
     {
       title: 'Create diagram',
-      description: 'Create a new .mmd diagram and its documentation file.',
+      description: 'Create a new .mmd diagram and its documentation file. Refuses to overwrite either existing file.',
       inputSchema: {
         path: z.string().describe('Path for the new .mmd, relative to the workspace root'),
         mmd: z.string().describe('Mermaid diagram source'),
@@ -170,10 +168,10 @@ export async function runMcp({ root }: McpOptions): Promise<void> {
     },
     async ({ path, mmd, title }) => {
       try {
-        const abs = resolveDiagramPath(root, path);
-        await ensureDirFor(abs);
-        await writeFile(abs, mmd, 'utf8');
-        await writeFile(abs.replace(/\.mmd$/i, '.md'), scaffoldDoc(title ?? basename(abs, '.mmd')), 'utf8');
+        await createDiagram(root, path, {
+          mmd,
+          md: scaffoldDoc(title ?? basename(path, '.mmd')),
+        });
         return result(`Created ${path} and its documentation file.`, { id: path });
       } catch (error) {
         return fail(error instanceof Error ? error.message : String(error));

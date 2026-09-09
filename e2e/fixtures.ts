@@ -44,7 +44,7 @@ async function startServer(root: string): Promise<{ url: string; child: ChildPro
 
 export const test = base.extend<ServerFixture>({
   root: async ({}, use) => {
-    const dir = await mkdtemp(join(tmpdir(), 'mmdocs-e2e-'));
+    const dir = await mkdtemp(join(tmpdir(), 'mermaid-docs-e2e-'));
     await cp('examples', dir, { recursive: true });
     await use(dir);
     await rm(dir, { recursive: true, force: true });
