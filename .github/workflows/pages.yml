@@ -33,7 +33,7 @@ jobs:
       - name: Build static demo
         run: npm run build:pages
         env:
-          VITE_MMDOCS_BASE: /${{ github.event.repository.name }}/
+          VITE_MERMAID_DOCS_BASE: /${{ github.event.repository.name }}/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:

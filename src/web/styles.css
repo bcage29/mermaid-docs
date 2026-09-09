@@ -223,15 +223,15 @@ body {
 .mermaid-host.is-clickable path.flowchart-link,
 .mermaid-host.is-clickable .messageLine0,
 .mermaid-host.is-clickable .messageLine1 { pointer-events: none; }
-.mermaid-host.is-clickable .mmdocs-hit,
+.mermaid-host.is-clickable .mermaid-docs-hit,
 .mermaid-host.is-clickable .edgeLabels > *,
 .mermaid-host.is-clickable .messageText { cursor: pointer; }
 
 /* Invisible twins that make a 2px link clickable. `stroke` rather than the default
    `visiblePainted`, which would need the stroke to actually be painted.
-   !important because Mermaid scopes its own styles by svg id - `#mmdocs-1 line` outranks
+   !important because Mermaid scopes its own styles by svg id - `#mermaid-docs-1 line` outranks
    any class selector here and would otherwise pin these back to 2px. */
-.mermaid-host .mmdocs-hit {
+.mermaid-host .mermaid-docs-hit {
   stroke: transparent !important; stroke-width: 14 !important; fill: none !important;
   marker-end: none; marker-start: none; pointer-events: stroke;
 }
@@ -250,7 +250,7 @@ body {
 
 /* Backdrop for the frozen participant row, so messages do not show through the gaps
    between actor boxes while the diagram is panned underneath it. */
-.mermaid-host .mmdocs-actor-backdrop { fill: var(--bg); opacity: 0; pointer-events: none; }
+.mermaid-host .mermaid-docs-actor-backdrop { fill: var(--bg); opacity: 0; pointer-events: none; }
 
 .canvas-toolbar {
   position: absolute; top: 10px; right: 10px; z-index: 5;

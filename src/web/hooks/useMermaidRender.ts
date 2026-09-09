@@ -45,7 +45,7 @@ export function useMermaidRender(mmd: string | undefined, id: string): RenderSta
     }
     initMermaid(theme === 'light' ? 'default' : 'dark');
     let cancelled = false;
-    const renderId = `mmdocs-${(counter.current += 1)}`;
+    const renderId = `mermaid-docs-${(counter.current += 1)}`;
 
     mermaid
       .render(renderId, mmd)

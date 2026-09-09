@@ -14,7 +14,7 @@ let root: string;
 let client: Client;
 
 beforeAll(async () => {
-  root = await mkdtemp(join(tmpdir(), 'mmdocs-mcp-'));
+  root = await mkdtemp(join(tmpdir(), 'mermaid-docs-mcp-'));
   await mkdir(join(root, 'flow'), { recursive: true });
   await writeFile(join(root, 'flow', 'demo.mmd'), MMD, 'utf8');
 
@@ -35,8 +35,13 @@ afterAll(async () => {
 });
 
 describe('mcp server', () => {
+  it('identifies the server by its full package name', () => {
+    expect(client.getServerVersion()?.name).toBe('mermaid-docs');
+    expect(client.getInstructions()).toMatch(/^mermaid-docs documents Mermaid diagrams/);
+  });
+
   it('delivers the format instructions to the client', () => {
-    // This is the reason mmdocs ships MCP and not only a CLI: the agent learns the
+    // This is the reason mermaid-docs ships MCP and not only a CLI: the agent learns the
     // format from here without the user explaining it.
     const instructions = client.getInstructions();
     expect(instructions).toBeTruthy();
@@ -129,7 +134,7 @@ describe('mcp server', () => {
   });
 
   it('rejects linked documentation through HTTP and MCP without changing either file', async () => {
-    const outside = await mkdtemp(join(tmpdir(), 'mmdocs-outside-'));
+    const outside = await mkdtemp(join(tmpdir(), 'mermaid-docs-outside-'));
     const diagramPath = join(root, 'linked.mmd');
     const docPath = join(root, 'linked.md');
     const target = join(outside, 'private.txt');
@@ -170,7 +175,7 @@ describe('mcp server', () => {
   });
 
   it('rejects creation through a linked parent before creating outside directories', async () => {
-    const outside = await mkdtemp(join(tmpdir(), 'mmdocs-outside-'));
+    const outside = await mkdtemp(join(tmpdir(), 'mermaid-docs-outside-'));
     const link = join(root, 'linked-directory');
     try {
       await symlink(outside, link, 'dir');

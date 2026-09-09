@@ -16,7 +16,7 @@ const AUTH = 'auth-flow';
  * the element's own `getBBox` and `getBoundingClientRect` gives the real mapping, and
  * `elementFromPoint` confirms it, which also waits out the canvas's fit animation.
  */
-async function linkPoint(page: Page, edgeId: string): Promise<{ x: number; y: number }> {
+async function linkPoint(page: Page, edgeId: string | number): Promise<{ x: number; y: number }> {
   return page.evaluate(async (id) => {
     let previous = '';
     let settled = 0;
@@ -25,7 +25,8 @@ async function linkPoint(page: Page, edgeId: string): Promise<{ x: number; y: nu
       await new Promise((resolve) => requestAnimationFrame(resolve));
       // Re-queried every time: re-rendering the diagram replaces these elements, and a
       // reference held across that becomes detached and never matches the hit test again.
-      const path = document.querySelector<SVGPathElement>(`.mermaid-host [data-hit-id="${id}"]`);
+      const selector = typeof id === 'number' ? `[data-hit="${id}"]` : `[data-hit-id="${id}"]`;
+      const path = document.querySelector<SVGGeometryElement>(`.mermaid-host ${selector}`);
       if (!path) continue;
 
       const rect = path.getBoundingClientRect();
@@ -54,7 +55,7 @@ async function linkPoint(page: Page, edgeId: string): Promise<{ x: number; y: nu
   }, edgeId);
 }
 
-async function clickLink(page: Page, edgeId: string): Promise<void> {
+async function clickLink(page: Page, edgeId: string | number): Promise<void> {
   const { x, y } = await linkPoint(page, edgeId);
   await page.mouse.click(x, y);
 }
@@ -619,18 +620,13 @@ test.describe('viewer', () => {
     await page.goto(`${baseURL}/#/seq2`);
     await expect(page.locator('.mermaid-host svg')).toBeVisible();
 
-    // The second message, clicked at the midpoint of its line.
-    const point = await page.evaluate(() => {
-      const line = document.querySelectorAll('.mermaid-host .messageLine0')[1]!.getBoundingClientRect();
-      return { x: line.left + line.width / 2, y: line.top + line.height / 2 };
-    });
-    await page.mouse.click(point.x, point.y);
+    await clickLink(page, 1);
     await expect(page.getByTestId('step-title')).toHaveText('Say goodbye');
 
     // Mermaid scopes its styles by svg id, and `#id line` outranks any class selector:
     // the hit targets get pinned back to 2px and become unclickable when zoomed out.
     const stroke = await page.evaluate(
-      () => getComputedStyle(document.querySelector('line.mmdocs-hit')!).strokeWidth,
+      () => getComputedStyle(document.querySelector('line.mermaid-docs-hit')!).strokeWidth,
     );
     expect(stroke).toBe('14px');
   });
@@ -834,7 +830,7 @@ test.describe('viewer', () => {
   test('the participant row is not frozen on a flowchart', async ({ page, baseURL }) => {
     await page.goto(`${baseURL}/#/${AUTH}`);
     await expect(page.locator('.mermaid-host svg')).toBeVisible();
-    await expect(page.locator('.mmdocs-actor-backdrop')).toHaveCount(0);
+    await expect(page.locator('.mermaid-docs-actor-backdrop')).toHaveCount(0);
   });
 
   test('the autonumber discs sit on top of the lifelines', async ({ page, baseURL, root }) => {

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 
 export type Theme = 'light' | 'dark';
 
-const STORAGE_KEY = 'mmdocs:theme';
+const STORAGE_KEY = 'mermaid-docs:theme';
 
 /**
  * One theme shared by the whole app.

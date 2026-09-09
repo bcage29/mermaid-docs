@@ -47,10 +47,10 @@ export async function runMcp({ root }: McpOptions): Promise<void> {
   const watcher = watchWorkspace(root, (ids) => {
     for (const id of ids) http.broadcast('changed', { name: diagramName(id) });
   });
-  process.stderr.write(`mmdocs viewer: ${http.url}\n`);
+  process.stderr.write(`mermaid-docs viewer: ${http.url}\n`);
 
   const server = new McpServer(
-    { name: 'mmdocs', version: '0.1.0' },
+    { name: 'mermaid-docs', version: '0.1.0' },
     { instructions: INSTRUCTIONS },
   );
 

@@ -91,7 +91,7 @@ export interface Api {
 /**
  * The viewer's API, independent of who owns the socket.
  *
- * `mmdocs serve` puts it behind its own HTTP server; `npm run dev` mounts it as Vite
+ * `mermaid-docs serve` puts it behind its own HTTP server; `npm run dev` mounts it as Vite
  * middleware. Both run this same handler rather than a copy.
  */
 export function createApi(root: string): Api {

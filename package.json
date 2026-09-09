@@ -17,8 +17,7 @@
     "node": ">=20"
   },
   "bin": {
-    "mermaid-docs": "dist/cli/index.js",
-    "mmdocs": "dist/cli/index.js"
+    "mermaid-docs": "dist/cli/index.js"
   },
   "exports": {
     ".": {
@@ -44,7 +43,7 @@
     "build": "npm run build:node && npm run build:web",
     "build:node": "tsup",
     "build:web": "vite build",
-    "build:pages": "VITE_MMDOCS_STATIC=true vite build",
+    "build:pages": "VITE_MERMAID_DOCS_STATIC=true vite build",
     "dev": "vite",
     "test": "vitest run",
     "test:watch": "vitest",
