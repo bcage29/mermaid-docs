@@ -53,6 +53,7 @@ export function raiseSequenceNumbers(host: HTMLElement): void {
 
 interface ActorHeader {
   groups: Element[];
+  firstActor: SVGRectElement;
   backdrop: SVGRectElement;
   /** Height of the actor row in user units, measured from the top of the viewBox. */
   height: number;
@@ -86,7 +87,7 @@ function measure(svg: SVGSVGElement): ActorHeader | undefined {
   }
   if (svg.lastElementChild !== groups[groups.length - 1]) svg.append(backdrop, ...groups);
 
-  return { groups, backdrop, height, maxShift: Math.max(0, box.height - height) };
+  return { groups, firstActor: rects[0]!, backdrop, height, maxShift: Math.max(0, box.height - height) };
 }
 
 /**
@@ -103,10 +104,12 @@ export function positionStickyActors(host: HTMLElement, scale: number): void {
   const header = measure(svg);
   if (!header) return;
 
-  const gap = viewport.getBoundingClientRect().top - svg.getBoundingClientRect().top;
-  const shift = Math.min(Math.max(0, gap / scale), header.maxShift);
+  const previousShift = Number(header.backdrop.dataset.mmdocsShift ?? 0);
+  const gap = viewport.getBoundingClientRect().top - header.firstActor.getBoundingClientRect().top;
+  const shift = Math.min(Math.max(0, previousShift + gap / scale), header.maxShift);
   const transform = shift > 0 ? `translateY(${shift}px)` : '';
 
+  header.backdrop.dataset.mmdocsShift = String(shift);
   header.backdrop.style.transform = transform;
   header.backdrop.style.opacity = shift > 0 ? '1' : '0';
   for (const group of header.groups) (group as SVGGElement).style.transform = transform;
