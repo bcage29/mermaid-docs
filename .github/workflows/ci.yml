@@ -72,7 +72,7 @@ jobs:
 
   # Single stable check name for branch protection, so changing the test
   # matrix never leaves required checks stuck pending.
-  ci-ok:
+  ci:
     if: always()
     needs: [test, e2e, package]
     runs-on: ubuntu-latest
