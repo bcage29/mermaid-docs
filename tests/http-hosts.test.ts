@@ -9,7 +9,7 @@ let root: string;
 let viewer: ServerHandle;
 
 beforeEach(async () => {
-  root = await mkdtemp(join(tmpdir(), 'mmdocs-hosts-'));
+  root = await mkdtemp(join(tmpdir(), 'mermaid-docs-hosts-'));
   await writeFile(join(root, 'demo.mmd'), 'flowchart TD\nStart --> End');
   viewer = await startServer(root);
 });
