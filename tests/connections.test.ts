@@ -8,6 +8,7 @@ describe('detectDiagramKind', () => {
     expect(detectDiagramKind('flowchart TD\n A --> B')).toBe('flowchart');
     expect(detectDiagramKind('graph LR\n A --> B')).toBe('flowchart');
     expect(detectDiagramKind('sequenceDiagram\n A->>B: hi')).toBe('sequence');
+    expect(detectDiagramKind('architecture-beta\n service api(server)[API]')).toBe('architecture');
     expect(detectDiagramKind('classDiagram\n Animal <|-- Duck')).toBe('other');
     expect(detectDiagramKind('')).toBe('other');
   });
@@ -18,6 +19,21 @@ describe('detectDiagramKind', () => {
 });
 
 describe('listConnections', () => {
+  it('parses architecture edges and their direction', () => {
+    const out = listConnections([
+      'architecture-beta',
+      'service web(internet)[Web]',
+      'service api(server)[API]',
+      'web:R --> L:api',
+      'web:B <-- T:api',
+    ].join('\n'));
+
+    expect(out.map(({ from, to, line }) => ({ from, to, line }))).toEqual([
+      { from: 'web', to: 'api', line: 4 },
+      { from: 'api', to: 'web', line: 5 },
+    ]);
+  });
+
   it('numbers connections in source order', () => {
     const out = listConnections('flowchart TD\n  A --> B\n  B --> C');
     expect(out.map((c) => [c.index, c.line, c.from, c.to])).toEqual([

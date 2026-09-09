@@ -83,6 +83,11 @@ body {
 .diagram-picker select:hover { border-color: var(--accent-dim); }
 .diagram-picker.empty { color: var(--text-dim); }
 
+@media (max-width: 900px) {
+  .app-header, .header-actions { gap: 10px; }
+  .workspace-root, .diagram-title { display: none; }
+}
+
 .connection-lost {
   border: 1px solid var(--warn); border-radius: 6px; padding: 3px 10px;
   background: var(--warn-bg); color: var(--warn); font: inherit; font-size: 12px;
@@ -147,6 +152,8 @@ body {
 .icon-button:hover { background: var(--accent-dim); border-color: var(--accent-dim); color: #fff; }
 .icon-button[aria-pressed='true'] { color: var(--accent); border-color: var(--accent); }
 .icon-button[aria-pressed='true']:hover { color: #fff; }
+.header-action-divider { width: 1px; height: 20px; background: var(--border); }
+.github-link { flex: 0 0 auto; text-decoration: none; }
 
 /* Sidebar ----------------------------------------------------------------- */
 /* The panels and the canvas differ only slightly in shade, so each panel carries a border

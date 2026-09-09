@@ -127,7 +127,7 @@ so it can be used in CI. Missing connection coverage is a warning.
 
 ## Limits
 
-- Connection highlighting supports flowcharts and sequence diagrams. Source
+- Connection highlighting supports flowcharts, sequence diagrams, and architecture diagrams. Source
   highlighting works for all Mermaid diagram types.
 - Diagram file names must be unique within the scanned folder and its direct
   subfolders.

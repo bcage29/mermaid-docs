@@ -22,6 +22,17 @@ function shortenPath(path: string, max = 44): string {
   return path.length <= max ? path : `\u2026${path.slice(-(max - 1))}`;
 }
 
+function GitHubIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+      <path
+        fill="currentColor"
+        d="M12 .7a11.5 11.5 0 0 0-3.64 22.41c.58.11.79-.25.79-.56v-2.23c-3.22.7-3.9-1.37-3.9-1.37-.53-1.34-1.29-1.7-1.29-1.7-1.05-.72.08-.71.08-.71 1.17.08 1.78 1.2 1.78 1.2 1.04 1.77 2.72 1.26 3.38.96.11-.75.41-1.26.74-1.55-2.57-.29-5.27-1.28-5.27-5.68 0-1.25.45-2.28 1.18-3.08-.12-.29-.51-1.46.11-3.04 0 0 .96-.31 3.16 1.18a10.94 10.94 0 0 1 5.75 0c2.2-1.49 3.16-1.18 3.16-1.18.62 1.58.23 2.75.11 3.04.73.8 1.18 1.83 1.18 3.08 0 4.41-2.71 5.38-5.29 5.67.42.36.79 1.07.79 2.16v3.2c0 .31.21.68.8.56A11.5 11.5 0 0 0 12 .7Z"
+      />
+    </svg>
+  );
+}
+
 export function App() {
   const { diagrams } = useDiagramList();
   const [route, navigate] = useRoute();
@@ -192,6 +203,18 @@ export function App() {
             </button>
           )}
           <StepNav index={stepIndex} total={total} onPrevious={() => goTo(stepIndex - 1)} onNext={() => goTo(stepIndex + 1)} />
+          <span className="header-action-divider" aria-hidden="true" />
+          <a
+            className="icon-button github-link"
+            href="https://github.com/bcage29/mermaid-docs"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="View Mermaid Docs on GitHub"
+            title="View Mermaid Docs on GitHub"
+            data-testid="github-link"
+          >
+            <GitHubIcon />
+          </a>
         </div>
       </header>
 

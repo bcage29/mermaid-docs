@@ -8,9 +8,10 @@
 
 const HIT_CLASS = 'mmdocs-hit';
 
-const SOURCE_SELECTOR: Record<'flowchart' | 'sequence', string> = {
+const SOURCE_SELECTOR: Record<'flowchart' | 'sequence' | 'architecture', string> = {
   flowchart: 'path.flowchart-link',
   sequence: '.messageLine0, .messageLine1',
+  architecture: '.architecture-edges path.edge',
 };
 
 /**
@@ -19,7 +20,7 @@ const SOURCE_SELECTOR: Record<'flowchart' | 'sequence', string> = {
  * Idempotent: this runs from the same MutationObserver that repaints the SVG, so adding
  * elements unconditionally would retrigger it forever.
  */
-export function addHitTargets(host: HTMLElement, kind: 'flowchart' | 'sequence'): void {
+export function addHitTargets(host: HTMLElement, kind: 'flowchart' | 'sequence' | 'architecture'): void {
   const svg = host.querySelector('svg');
   if (!svg) return;
 

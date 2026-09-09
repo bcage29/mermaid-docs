@@ -2,11 +2,20 @@ import { buildDiagram } from '../core/diagramModel.js';
 import type { Diagram } from './types.js';
 import authFlowMmd from '../../examples/auth/auth-flow.mmd?raw';
 import authFlowMd from '../../examples/auth/auth-flow.md?raw';
-import schemaMmd from '../../examples/data/schema.mmd?raw';
+import messagingMmd from '../../examples/sequence/messaging.mmd?raw';
+import messagingMd from '../../examples/sequence/messaging.md?raw';
+import agenticRagMmd from '../../examples/architecture/agentic-rag.mmd?raw';
+import agenticRagMd from '../../examples/architecture/agentic-rag.md?raw';
 
 export const STATIC_DEMO = import.meta.env.VITE_MMDOCS_STATIC === 'true';
 
 const examples = [
+  buildDiagram({
+    id: 'architecture/agentic-rag.mmd',
+    relPath: 'architecture/agentic-rag.mmd',
+    mmd: agenticRagMmd,
+    md: agenticRagMd,
+  }),
   buildDiagram({
     id: 'auth/auth-flow.mmd',
     relPath: 'auth/auth-flow.mmd',
@@ -14,9 +23,10 @@ const examples = [
     md: authFlowMd,
   }),
   buildDiagram({
-    id: 'data/schema.mmd',
-    relPath: 'data/schema.mmd',
-    mmd: schemaMmd,
+    id: 'sequence/messaging.mmd',
+    relPath: 'sequence/messaging.mmd',
+    mmd: messagingMmd,
+    md: messagingMd,
   }),
 ];
 

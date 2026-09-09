@@ -1,0 +1,55 @@
+flowchart LR
+  subgraph client[Client]
+    user[User]
+    app[Chat Application]
+  end
+
+  subgraph runtime[Agent Runtime]
+    gateway[Agent API]
+    orchestrator[Orchestrator]
+    model[Language Model]
+    guardrails[Guardrails]
+  end
+
+  subgraph knowledge[Knowledge]
+    retriever[Retrieval Agent]
+    index[(Vector Index)]
+    sources[(Source Documents)]
+  end
+
+  subgraph actions[Actions]
+    tools[Tool Gateway]
+    systems[(External Systems)]
+  end
+
+  subgraph operations[Operations]
+    traces[Traces and Evaluation]
+  end
+
+  %% @step:start ask
+  user --> app
+  app <--> gateway
+  %% @step:end ask
+
+  %% @step:start plan
+  gateway <--> orchestrator
+  orchestrator <--> model
+  orchestrator --> guardrails
+  %% @step:end plan
+
+  %% @step:start retrieve
+  orchestrator --> retriever
+  retriever <--> index
+  sources --> index
+  %% @step:end retrieve
+
+  %% @step:start act
+  orchestrator --> tools
+  tools <--> systems
+  %% @step:end act
+
+  %% @step:start answer
+  orchestrator --> traces
+  gateway --> traces
+  app --> traces
+  %% @step:end answer
