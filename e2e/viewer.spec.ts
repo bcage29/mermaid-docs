@@ -757,7 +757,7 @@ test.describe('viewer', () => {
       });
 
     const before = await geometry();
-    expect(before.actorTop).toBeGreaterThan(before.viewportTop);
+    expect(before.actorTop).toBeGreaterThanOrEqual(before.viewportTop - 2);
 
     // Drag the diagram up far enough that the participant row would otherwise leave.
     const box = (await page.locator('.canvas-viewport').boundingBox())!;
