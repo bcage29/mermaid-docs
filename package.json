@@ -1,6 +1,6 @@
 {
   "name": "mermaid-docs",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Mermaid diagram viewer and step-by-step documentation tool, with an MCP server for coding agents",
   "author": "Brennen Cage",
   "repository": {
@@ -53,15 +53,15 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
-    "chokidar": "^4.0.3",
-    "zod": "^3.24.1"
+    "chokidar": "^5.0.0",
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
     "@types/node": "^22.10.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
-    "@vitejs/plugin-react": "^5.0.0",
+    "@vitejs/plugin-react": "^6.1.1",
     "mermaid": "^11.17.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

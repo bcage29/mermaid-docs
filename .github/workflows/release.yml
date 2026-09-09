@@ -47,7 +47,7 @@ jobs:
           mkdir -p package
           npm pack --pack-destination package
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: npm-package
           path: package/*.tgz
@@ -79,7 +79,7 @@ jobs:
       # Pin a CLI new enough for staged publishing without taking npm 12 changes.
       - run: npm install -g npm@11.19.1
 
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v8
         with:
           name: npm-package
           path: package
@@ -101,6 +101,6 @@ jobs:
       # Draft until the staged version is approved on npm, so the release
       # never advertises a version that isn't on the registry yet.
       - name: Create draft GitHub release
-        run: gh release create "$GITHUB_REF_NAME" --generate-notes --verify-tag --draft
+        run: gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --generate-notes --verify-tag --draft
         env:
           GH_TOKEN: ${{ github.token }}
