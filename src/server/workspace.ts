@@ -1,4 +1,4 @@
-import { readFile, readdir, stat, writeFile } from 'node:fs/promises';
+import { open, readFile, readdir, stat, unlink, writeFile, type FileHandle } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { buildDiagram } from '../core/diagramModel.js';
@@ -115,6 +115,35 @@ export async function loadDiagram(root: string, id: string): Promise<Diagram> {
 export interface WriteResult {
   mmdPath: string;
   docPath: string;
+}
+
+export async function createDiagram(
+  root: string,
+  id: string,
+  files: { mmd: string; md: string },
+): Promise<WriteResult> {
+  const mmdPath = resolveDiagramPath(root, id);
+  const docPath = docPathFor(mmdPath);
+  await ensureDirFor(mmdPath);
+  const created: { path: string; handle: FileHandle; content: string }[] = [];
+  try {
+    try {
+      for (const [path, content] of [[mmdPath, files.mmd], [docPath, files.md]] as const) {
+        const handle = await open(path, 'wx');
+        created.push({ path, handle, content });
+      }
+      for (const file of created) await file.handle.writeFile(file.content, 'utf8');
+    } finally {
+      await Promise.all(created.map((file) => file.handle.close()));
+    }
+  } catch (error) {
+    await Promise.all(created.map((file) => unlink(file.path)));
+    if ((error as NodeJS.ErrnoException).code === 'EEXIST') {
+      throw new Error('The diagram or its documentation already exists. Neither file was overwritten.');
+    }
+    throw error;
+  }
+  return { mmdPath, docPath };
 }
 
 /** Write both files for a diagram. Only the parts provided are touched. */
