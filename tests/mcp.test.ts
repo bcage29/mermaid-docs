@@ -128,6 +128,21 @@ describe('mcp server', () => {
     expect((res.content as Array<{ text: string }>)[0]!.text).toContain('outside the workspace');
   });
 
+  it('creates a diagram once and refuses to overwrite its files', async () => {
+    const created = await client.callTool({
+      name: 'create_diagram', arguments: { path: 'created.mmd', mmd: MMD, title: 'Created' },
+    });
+    expect(created.isError).not.toBe(true);
+    const originalDoc = await readFile(join(root, 'created.md'), 'utf8');
+    const collision = await client.callTool({
+      name: 'create_diagram', arguments: { path: 'created.mmd', mmd: 'Changed', title: 'Changed' },
+    });
+    expect(collision.isError).toBe(true);
+    expect(JSON.stringify(collision)).toContain('already exists');
+    expect(await readFile(join(root, 'created.mmd'), 'utf8')).toBe(MMD);
+    expect(await readFile(join(root, 'created.md'), 'utf8')).toBe(originalDoc);
+  });
+
   it('rejects linked documentation through HTTP and MCP without changing either file', async () => {
     const outside = await mkdtemp(join(tmpdir(), 'mmdocs-outside-'));
     const diagramPath = join(root, 'linked.mmd');
