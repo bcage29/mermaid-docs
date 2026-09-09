@@ -69,6 +69,30 @@ function sendJson(res: ServerResponse, status: number, body: unknown): void {
   res.end(payload);
 }
 
+function requestIsAllowed(req: IncomingMessage, configuredHost?: string): boolean {
+  const authority = req.headers.host;
+  if (!authority || /[\s/@?#\\]/.test(authority)) return false;
+  try {
+    const protocol = 'encrypted' in req.socket && req.socket.encrypted ? 'https:' : 'http:';
+    const address = new URL(`${protocol}//${authority}`);
+    const hostname = (host: string) => {
+      const normalized = host.toLowerCase().replace(/^::ffff:/, '');
+      return normalized.includes(':') && !normalized.startsWith('[') ? `[${normalized}]` : normalized;
+    };
+    const allowed = new Set(['localhost', '127.0.0.1', '[::1]']);
+    if (req.socket.localAddress) allowed.add(hostname(req.socket.localAddress));
+    if (configuredHost && configuredHost !== '0.0.0.0' && configuredHost !== '::') {
+      allowed.add(hostname(configuredHost));
+    }
+    if (!allowed.has(address.hostname)) return false;
+    if (Number(address.port || (protocol === 'https:' ? 443 : 80)) !== req.socket.localPort) return false;
+    if (req.headers.origin !== undefined && req.headers.origin !== address.origin) return false;
+    return req.headers['sec-fetch-site'] !== 'cross-site';
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Start the viewer HTTP server.
  *
@@ -94,13 +118,18 @@ export interface Api {
  * `mmdocs serve` puts it behind its own HTTP server; `npm run dev` mounts it as Vite
  * middleware. Both run this same handler rather than a copy.
  */
-export function createApi(root: string): Api {
+export function createApi(root: string, configuredHost?: string): Api {
   const clients = new Set<ServerResponse>();
 
   async function handle(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
     const url = new URL(req.url ?? '/', 'http://localhost');
     const path = decodeURIComponent(url.pathname);
     if (!path.startsWith('/api/')) return false;
+
+    if (!requestIsAllowed(req, configuredHost)) {
+      sendJson(res, 403, { error: 'Forbidden' });
+      return true;
+    }
 
     if (path === '/api/workspace') {
       sendJson(res, 200, { root, stale: await serverIsStale() });
@@ -215,9 +244,13 @@ async function serveStatic(path: string, res: ServerResponse): Promise<void> {
  * opt-in.
  */
 export async function startServer(root: string, requestedPort = 0, host = '127.0.0.1'): Promise<ServerHandle> {
-  const api = createApi(root);
+  const api = createApi(root, host);
 
   const server = createServer((req, res) => {
+    if (!requestIsAllowed(req, host)) {
+      sendJson(res, 403, { error: 'Forbidden' });
+      return;
+    }
     (async () => {
       if (await api.handle(req, res)) return;
       const url = new URL(req.url ?? '/', 'http://localhost');
