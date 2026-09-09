@@ -1,6 +1,6 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
-import { extname, join } from 'node:path';
+import { basename, extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { networkInterfaces } from 'node:os';
 import { loadDiagram, scanDiagrams } from './workspace.js';
@@ -132,7 +132,7 @@ export function createApi(root: string, configuredHost?: string): Api {
     }
 
     if (path === '/api/workspace') {
-      sendJson(res, 200, { root, stale: await serverIsStale() });
+      sendJson(res, 200, { root: basename(root) || 'Workspace', stale: await serverIsStale() });
       return true;
     }
 

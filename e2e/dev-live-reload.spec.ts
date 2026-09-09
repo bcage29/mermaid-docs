@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { createServer } from 'vite';
 import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 
 test('Vite reloads the open diagram and documentation after disk changes', async ({ page }) => {
   const root = await mkdtemp(join(tmpdir(), 'mermaid-docs-dev-'));
@@ -20,7 +20,9 @@ test('Vite reloads the open diagram and documentation after disk changes', async
     const baseURL = server.resolvedUrls!.local[0];
     const workspace = await page.request.get(`${baseURL}api/workspace`);
     expect(workspace.ok()).toBe(true);
-    expect(await workspace.json()).toMatchObject({ root });
+    const workspaceInfo = await workspace.json();
+    expect(workspaceInfo).toMatchObject({ root: basename(root) });
+    expect(JSON.stringify(workspaceInfo)).not.toContain(root);
     const url = `${baseURL}#/demo`;
     await page.goto(url);
     await expect(page.getByTestId('diagram-title')).toHaveText('Before edit');

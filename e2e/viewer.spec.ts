@@ -516,11 +516,10 @@ test.describe('viewer', () => {
 
   test('shows which workspace it is serving', async ({ page, baseURL, root }) => {
     await page.goto(baseURL);
-    // Several viewers on several ports otherwise look identical. Shown tail-first, since
-    // that is the identifying part, with the whole path on hover.
     const shown = page.getByTestId('workspace-root');
-    await expect(shown).toHaveAttribute('title', root);
+    await expect(shown).toHaveAttribute('title', root.split('/').pop()!);
     await expect(shown).toContainText(root.split('/').pop()!);
+    expect(await page.content()).not.toContain(root);
   });
 
   test('ignores diagrams nested more than one folder deep', async ({ page, baseURL, root }) => {

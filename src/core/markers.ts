@@ -1,4 +1,5 @@
 import type { Region, ValidationIssue } from './types.js';
+import { UserInputError } from './errors.js';
 
 /**
  * `%% @step:start <id>` / `%% @step:end <id>` on a line of its own.
@@ -168,10 +169,10 @@ export interface RegionSpec {
 export function setRegions(mmd: string, specs: RegionSpec[]): string {
   for (const spec of specs) {
     if (!ID_RE.test(spec.id)) {
-      throw new Error(`Invalid step id "${spec.id}". Use letters, digits, "-" and "_", starting alphanumeric.`);
+      throw new UserInputError('Invalid step id. Use letters, digits, "-" and "_", starting alphanumeric.');
     }
     if (spec.endLine < spec.startLine) {
-      throw new Error(
+      throw new UserInputError(
         `Region "${spec.id}" ends (line ${spec.endLine}) before it starts (line ${spec.startLine}).`,
       );
     }
@@ -209,7 +210,7 @@ export function setRegions(mmd: string, specs: RegionSpec[]): string {
 
   for (const spec of specs) {
     if (spec.startLine < 1 || spec.endLine > original.length) {
-      throw new Error(
+      throw new UserInputError(
         `Region "${spec.id}" spans lines ${spec.startLine}-${spec.endLine}, outside the diagram (1-${original.length}).`,
       );
     }

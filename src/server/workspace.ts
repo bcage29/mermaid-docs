@@ -2,6 +2,7 @@ import { open, readFile, readdir, stat, unlink, writeFile, type FileHandle } fro
 import { existsSync, lstatSync } from 'node:fs';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { buildDiagram } from '../core/diagramModel.js';
+import { UserInputError } from '../core/errors.js';
 import type { Diagram } from '../core/types.js';
 
 /** Directories never worth scanning for diagrams. */
@@ -96,7 +97,7 @@ function assertNoSymlinks(root: string, filePath: string): void {
       throw error;
     }
     if (info.isSymbolicLink()) {
-      throw new Error('Symbolic links are not allowed in diagram paths.');
+      throw new UserInputError('Symbolic links are not allowed in diagram paths.');
     }
   }
 }
@@ -109,9 +110,9 @@ export function resolveDiagramPath(root: string, id: string): string {
   const abs = resolve(root, id);
   const rootWithSep = resolve(root) + sep;
   if (abs !== resolve(root) && !abs.startsWith(rootWithSep)) {
-    throw new Error(`Diagram id "${id}" resolves outside the workspace root.`);
+    throw new UserInputError('Diagram path resolves outside the workspace root.');
   }
-  if (!/\.mmd$/i.test(abs)) throw new Error(`Diagram id "${id}" must name a .mmd file.`);
+  if (!/\.mmd$/i.test(abs)) throw new UserInputError('Diagram id must name a .mmd file.');
   assertNoSymlinks(root, abs);
   assertNoSymlinks(root, docPathFor(abs));
   return abs;
@@ -158,7 +159,7 @@ export async function createDiagram(
   } catch (error) {
     await Promise.all(created.map((file) => unlink(file.path)));
     if ((error as NodeJS.ErrnoException).code === 'EEXIST') {
-      throw new Error('The diagram or its documentation already exists. Neither file was overwritten.');
+      throw new UserInputError('The diagram or its documentation already exists. Neither file was overwritten.');
     }
     throw error;
   }

@@ -21,8 +21,8 @@ beforeAll(async () => {
   client = new Client({ name: 'test', version: '1.0.0' });
   await client.connect(
     new StdioClientTransport({
-      command: 'npx',
-      args: ['tsx', 'src/cli/index.ts', 'mcp', root],
+      command: process.execPath,
+      args: ['--import', 'tsx', 'src/cli/index.ts', 'mcp', root],
       cwd: process.cwd(),
       stderr: 'pipe',
     }),
@@ -131,6 +131,21 @@ describe('mcp server', () => {
     });
     expect(res.isError).toBe(true);
     expect((res.content as Array<{ text: string }>)[0]!.text).toContain('outside the workspace');
+  });
+
+  it('does not expose absolute paths in filesystem errors', async () => {
+    const res = await client.callTool({ name: 'get_diagram', arguments: { id: 'missing.mmd' } });
+    expect(res.isError).toBe(true);
+    expect(JSON.stringify(res)).toContain('not found');
+    expect(JSON.stringify(res)).not.toContain(root);
+    expect(JSON.stringify(res)).not.toContain('ENOENT');
+  });
+
+  it('does not echo an absolute path rejected by validation', async () => {
+    const res = await client.callTool({ name: 'get_diagram', arguments: { id: join(tmpdir(), 'private', 'outside.mmd') } });
+    expect(res.isError).toBe(true);
+    expect(JSON.stringify(res)).toContain('outside the workspace');
+    expect(JSON.stringify(res)).not.toContain(tmpdir());
   });
 
   it('creates a diagram once and refuses to overwrite its files', async () => {
