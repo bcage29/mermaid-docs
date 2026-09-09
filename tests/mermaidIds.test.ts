@@ -82,17 +82,17 @@ describe('parseEdgeId', () => {
 describe('nodeIdFromElementId', () => {
   it('recovers the source node id from a rendered element id', async () => {
     const { nodeIdFromElementId } = await import('../src/core/mermaidIds.js');
-    expect(nodeIdFromElementId('mmdocs-1-flowchart-User-0')).toBe('User');
+    expect(nodeIdFromElementId('mermaid-docs-1-flowchart-User-0')).toBe('User');
   });
 
   it('keeps hyphens in the node id', async () => {
     const { nodeIdFromElementId } = await import('../src/core/mermaidIds.js');
-    expect(nodeIdFromElementId('mmdocs-3-flowchart-auth-one-test-0')).toBe('auth-one-test');
+    expect(nodeIdFromElementId('mermaid-docs-3-flowchart-auth-one-test-0')).toBe('auth-one-test');
   });
 
   it('returns undefined for anything else', async () => {
     const { nodeIdFromElementId } = await import('../src/core/mermaidIds.js');
-    expect(nodeIdFromElementId('mmdocs-1-L_A_B_0')).toBeUndefined();
+    expect(nodeIdFromElementId('mermaid-docs-1-L_A_B_0')).toBeUndefined();
     expect(nodeIdFromElementId('')).toBeUndefined();
   });
 });

@@ -35,7 +35,7 @@ export async function runServe({ root, flags }: ServeOptions): Promise<void> {
     for (const id of ids) handle.broadcast('changed', { name: diagramName(id) });
   });
 
-  process.stdout.write(`mmdocs serving ${root}\n${handle.url}\n`);
+  process.stdout.write(`mermaid-docs serving ${root}\n${handle.url}\n`);
   if (handle.host !== '127.0.0.1' && handle.host !== 'localhost') {
     process.stdout.write(
       `Reachable by anyone on this network. It serves every .mmd and .md under ${root}.\n`,

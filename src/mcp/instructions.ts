@@ -1,10 +1,10 @@
 /**
  * Delivered to the client at initialization and surfaced to the model.
  *
- * This is the reason mmdocs ships an MCP server rather than only a CLI: the agent learns
+ * This is the reason mermaid-docs ships an MCP server rather than only a CLI: the agent learns
  * the file format here, without the user having to explain it or maintain a CLAUDE.md.
  */
-export const INSTRUCTIONS = `mmdocs documents Mermaid diagrams as guided, step-by-step walkthroughs.
+export const INSTRUCTIONS = `mermaid-docs documents Mermaid diagrams as guided, step-by-step walkthroughs.
 
 FILE FORMAT
 Every diagram is exactly two sibling files that share a basename:

@@ -19,7 +19,8 @@ The [GitHub Pages demo](https://bcage29.github.io/mermaid-docs/) runs entirely i
 browser with the files in `examples/` bundled at build time. It is read-only and has no
 live file watching; use the CLI when you want to browse a local workspace.
 
-Pushes to `main` deploy the demo through `.github/workflows/pages.yml`. In the repository
+Pushes to `main` deploy the demo through `.github/workflows/ci.yml` only after all CI
+checks pass. Pull requests do not deploy. In the repository
 settings, set **Pages > Build and deployment > Source** to **GitHub Actions** once before
 the first deployment.
 
@@ -73,7 +74,7 @@ Create `.vscode/mcp.json` in your workspace:
 ```json
 {
   "servers": {
-    "mmdocs": {
+    "mermaid-docs": {
       "type": "stdio",
       "command": "npx",
       "args": ["-y", "mermaid-docs", "mcp", "${workspaceFolder}/docs"]
@@ -82,7 +83,7 @@ Create `.vscode/mcp.json` in your workspace:
 }
 ```
 
-Run **MCP: List Servers** from the Command Palette, start `mmdocs`, and approve
+Run **MCP: List Servers** from the Command Palette, start `mermaid-docs`, and approve
 the server when prompted.
 
 ### Claude Code
@@ -90,7 +91,7 @@ the server when prompted.
 Run this from your project root:
 
 ```bash
-claude mcp add --scope project --transport stdio mmdocs -- \
+claude mcp add --scope project --transport stdio mermaid-docs -- \
   npx -y mermaid-docs mcp ./docs
 ```
 
@@ -101,17 +102,17 @@ Then ask your agent: `Document the auth flow diagram as a walkthrough.`
 ## CLI
 
 ```bash
-mmdocs <folder>                  # Open the viewer
-mmdocs <folder> --lan            # Share on your local network
-mmdocs mcp <folder>              # Start MCP and the viewer
-mmdocs validate <folder>         # Validate all diagrams
-mmdocs init <diagram.mmd>        # Create its Markdown file
-mmdocs set-step <diagram.mmd> --id token-issue --title "Token is issued" \
+mermaid-docs <folder>                  # Open the viewer
+mermaid-docs <folder> --lan            # Share on your local network
+mermaid-docs mcp <folder>              # Start MCP and the viewer
+mermaid-docs validate <folder>         # Validate all diagrams
+mermaid-docs init <diagram.mmd>        # Create its Markdown file
+mermaid-docs set-step <diagram.mmd> --id token-issue --title "Token is issued" \
     --body "..." --start 11 --end 12
-mmdocs delete-step <diagram.mmd> --id token-issue
+mermaid-docs delete-step <diagram.mmd> --id token-issue
 ```
 
-Run `mmdocs --help` for all options. `validate` exits with code 1 for errors,
+Run `mermaid-docs --help` for all options. `validate` exits with code 1 for errors,
 so it can be used in CI. Missing connection coverage is a warning.
 
 ## Keyboard
@@ -131,6 +132,10 @@ so it can be used in CI. Missing connection coverage is a warning.
   highlighting works for all Mermaid diagram types.
 - Diagram file names must be unique within the scanned folder and its direct
   subfolders.
+- Diagram files, sibling documentation, and directories below the workspace root
+  must not be symbolic links. The selected root itself may be a symbolic link.
+  Path checks do not sandbox a workspace against concurrent changes by untrusted
+  local processes.
 - The viewer is read-only. Edit through the CLI, MCP tools, or your editor.
 - The server binds to `127.0.0.1` by default. `--lan` has no authentication;
   use it only on a trusted network.
@@ -154,6 +159,18 @@ remove older copies from repository history.
 
 ## Development
 
+### Naming Compatibility
+
+Use `mermaid-docs` for both the CLI command and MCP server configuration. The
+former abbreviated command is no longer installed. Update scripts and MCP entries
+that used it.
+
+Environment variables use `MERMAID_DOCS_ROOT`, `VITE_MERMAID_DOCS_BASE`, and
+`VITE_MERMAID_DOCS_STATIC`; the former abbreviated names are no longer read.
+The browser preference namespace has also changed, so the saved theme resets once.
+
+### Commands
+
 ```bash
 npm install
 npm run dev
@@ -164,8 +181,8 @@ npm run test:e2e
 ```
 
 Development requires Node.js 20 or newer. `npm run dev` documents `examples/`
-by default; set `MMDOCS_ROOT` to use another folder. `build:pages` creates the static,
-bundled-example version in `dist/web`; set `VITE_MMDOCS_BASE` when it will be served from
+by default; set `MERMAID_DOCS_ROOT` to use another folder. `build:pages` creates the static,
+bundled-example version in `dist/web`; set `VITE_MERMAID_DOCS_BASE` when it will be served from
 a subpath.
 
 ## License

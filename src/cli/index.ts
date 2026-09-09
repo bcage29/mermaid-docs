@@ -6,15 +6,15 @@ import { runSetStep } from './commands/setStep.js';
 import { runDeleteStep } from './commands/deleteStep.js';
 import { runInit } from './commands/init.js';
 
-const USAGE = `mmdocs - view and document Mermaid diagrams
+const USAGE = `mermaid-docs - view and document Mermaid diagrams
 
 Usage:
-  mmdocs <folder>                     Serve the viewer on a free port
-  mmdocs mcp <folder>                 Run the MCP server (stdio) plus the viewer
-  mmdocs validate <folder>            Check every diagram; exit 1 on errors
-  mmdocs init <diagram.mmd>           Create the sibling .md documentation file
-  mmdocs set-step <diagram.mmd>       Create or update a step
-  mmdocs delete-step <diagram.mmd>    Remove a step
+  mermaid-docs <folder>                     Serve the viewer on a free port
+  mermaid-docs mcp <folder>                 Run the MCP server (stdio) plus the viewer
+  mermaid-docs validate <folder>            Check every diagram; exit 1 on errors
+  mermaid-docs init <diagram.mmd>           Create the sibling .md documentation file
+  mermaid-docs set-step <diagram.mmd>       Create or update a step
+  mermaid-docs delete-step <diagram.mmd>    Remove a step
 
 Serve options:
   --port <n>       Port to listen on (default: a free one)
@@ -97,6 +97,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((error: unknown) => {
-  process.stderr.write(`mmdocs: ${error instanceof Error ? error.message : String(error)}\n`);
+  process.stderr.write(`mermaid-docs: ${error instanceof Error ? error.message : String(error)}\n`);
   process.exitCode = 1;
 });
