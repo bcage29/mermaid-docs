@@ -19,7 +19,8 @@ The [GitHub Pages demo](https://bcage29.github.io/mermaid-docs/) runs entirely i
 browser with the files in `examples/` bundled at build time. It is read-only and has no
 live file watching; use the CLI when you want to browse a local workspace.
 
-Pushes to `main` deploy the demo through `.github/workflows/pages.yml`. In the repository
+Pushes to `main` deploy the demo through `.github/workflows/ci.yml` only after all CI
+checks pass. Pull requests do not deploy. In the repository
 settings, set **Pages > Build and deployment > Source** to **GitHub Actions** once before
 the first deployment.
 
