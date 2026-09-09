@@ -9,6 +9,8 @@ import { z } from 'zod';
 import { basename } from 'node:path';
 import { writeFile } from 'node:fs/promises';
 import { INSTRUCTIONS } from './instructions.js';
+import { UserInputError } from '../core/errors.js';
+import { mcpErrorMessage } from './errors.js';
 import { deleteStep, reorderSteps, scaffoldDoc, setStep } from '../core/mutate.js';
 import { computeCoverage, validateDiagram } from '../core/validate.js';
 import { listConnections } from '../core/connections.js';
@@ -37,8 +39,8 @@ function result(text: string, structured?: unknown) {
   };
 }
 
-function fail(message: string) {
-  return { content: [{ type: 'text' as const, text: message }], isError: true };
+function fail(error: unknown) {
+  return { content: [{ type: 'text' as const, text: mcpErrorMessage(error) }], isError: true };
 }
 
 export async function runMcp({ root }: McpOptions): Promise<void> {
@@ -62,21 +64,25 @@ export async function runMcp({ root }: McpOptions): Promise<void> {
       inputSchema: {},
     },
     async () => {
-      const refs = await scanDiagrams(root);
-      const diagrams = await Promise.all(
-        refs.map(async (ref) => {
-          const diagram = await loadDiagram(root, ref.id);
-          return {
-            id: ref.id,
-            title: diagram.title,
-            group: ref.group,
-            stepCount: diagram.steps.length,
-            hasDocumentation: ref.hasDocumentation,
-          };
-        }),
-      );
-      const listing = diagrams.map((d) => `${d.id} - ${d.title} (${d.stepCount} steps)`).join('\n');
-      return result(diagrams.length ? listing : 'No .mmd files found in the workspace.', { diagrams });
+      try {
+        const refs = await scanDiagrams(root);
+        const diagrams = await Promise.all(
+          refs.map(async (ref) => {
+            const diagram = await loadDiagram(root, ref.id);
+            return {
+              id: ref.id,
+              title: diagram.title,
+              group: ref.group,
+              stepCount: diagram.steps.length,
+              hasDocumentation: ref.hasDocumentation,
+            };
+          }),
+        );
+        const listing = diagrams.map((d) => `${d.id} - ${d.title} (${d.stepCount} steps)`).join('\n');
+        return result(diagrams.length ? listing : 'No .mmd files found in the workspace.', { diagrams });
+      } catch (error) {
+        return fail(error);
+      }
     },
   );
 
@@ -113,7 +119,7 @@ export async function runMcp({ root }: McpOptions): Promise<void> {
           { ...diagram, steps },
         );
       } catch (error) {
-        return fail(error instanceof Error ? error.message : String(error));
+        return fail(error);
       }
     },
   );
@@ -152,7 +158,7 @@ export async function runMcp({ root }: McpOptions): Promise<void> {
         const coverage = computeCoverage(files.mmd, regions);
         return result(`${listing}\n\n${coverage.covered}/${coverage.total} documented.`, { connections, coverage });
       } catch (error) {
-        return fail(error instanceof Error ? error.message : String(error));
+        return fail(error);
       }
     },
   );
@@ -176,7 +182,7 @@ export async function runMcp({ root }: McpOptions): Promise<void> {
         await writeFile(abs.replace(/\.mmd$/i, '.md'), scaffoldDoc(title ?? basename(abs, '.mmd')), 'utf8');
         return result(`Created ${path} and its documentation file.`, { id: path });
       } catch (error) {
-        return fail(error instanceof Error ? error.message : String(error));
+        return fail(error);
       }
     },
   );
@@ -201,7 +207,7 @@ export async function runMcp({ root }: McpOptions): Promise<void> {
     async ({ id, stepId, title, body, phase, startLine, endLine, after }) => {
       try {
         if ((startLine === undefined) !== (endLine === undefined)) {
-          return fail('startLine and endLine must be provided together.');
+          return fail(new UserInputError('startLine and endLine must be provided together.'));
         }
         const files = await readDiagramFiles(root, id);
         const out = setStep(
@@ -223,7 +229,7 @@ export async function runMcp({ root }: McpOptions): Promise<void> {
           { stepId, issues },
         );
       } catch (error) {
-        return fail(error instanceof Error ? error.message : String(error));
+        return fail(error);
       }
     },
   );
@@ -246,7 +252,7 @@ export async function runMcp({ root }: McpOptions): Promise<void> {
         await writeDiagram(root, id, { mmd: out.mmd, ...(out.md !== undefined ? { md: out.md } : {}) });
         return result(`Step "${stepId}" removed.`, { stepId });
       } catch (error) {
-        return fail(error instanceof Error ? error.message : String(error));
+        return fail(error);
       }
     },
   );
@@ -269,7 +275,7 @@ export async function runMcp({ root }: McpOptions): Promise<void> {
         await writeDiagram(root, id, out.md !== undefined ? { md: out.md } : {});
         return result(`Reordered ${stepIds.length} steps.`, { stepIds });
       } catch (error) {
-        return fail(error instanceof Error ? error.message : String(error));
+        return fail(error);
       }
     },
   );
@@ -291,7 +297,7 @@ export async function runMcp({ root }: McpOptions): Promise<void> {
         if (coverage.total > 0) lines.push(`${coverage.covered}/${coverage.total} connections documented.`);
         return result(lines.length === 0 ? 'No problems found.' : lines.join('\n'), { issues, coverage });
       } catch (error) {
-        return fail(error instanceof Error ? error.message : String(error));
+        return fail(error);
       }
     },
   );

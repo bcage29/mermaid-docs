@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { STATIC_DEMO } from '../staticExamples.js';
 
 export interface Workspace {
-  /** Absolute path the viewer was pointed at. */
+  /** Display name of the selected workspace, without its parent directories. */
   root: string;
   /** The viewer assets on disk are newer than the running server. */
   stale: boolean;

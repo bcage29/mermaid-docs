@@ -2,6 +2,7 @@ import { readFile, readdir, stat, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { buildDiagram } from '../core/diagramModel.js';
+import { UserInputError } from '../core/errors.js';
 import type { Diagram } from '../core/types.js';
 
 /** Directories never worth scanning for diagrams. */
@@ -92,9 +93,9 @@ export function resolveDiagramPath(root: string, id: string): string {
   const abs = resolve(root, id);
   const rootWithSep = resolve(root) + sep;
   if (abs !== resolve(root) && !abs.startsWith(rootWithSep)) {
-    throw new Error(`Diagram id "${id}" resolves outside the workspace root.`);
+    throw new UserInputError('Diagram path resolves outside the workspace root.');
   }
-  if (!/\.mmd$/i.test(abs)) throw new Error(`Diagram id "${id}" must name a .mmd file.`);
+  if (!/\.mmd$/i.test(abs)) throw new UserInputError('Diagram id must name a .mmd file.');
   return abs;
 }
 

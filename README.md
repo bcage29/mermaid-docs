@@ -135,6 +135,23 @@ so it can be used in CI. Missing connection coverage is a warning.
 - The server binds to `127.0.0.1` by default. `--lan` has no authentication;
   use it only on a trusted network.
 
+## Privacy
+
+The viewer identifies the workspace by its folder name, not its absolute path.
+MCP tool responses omit local paths from filesystem errors and preserve actionable
+validation feedback. Unexpected tool failures return a generic message to the agent;
+their detailed diagnostics go to stderr, never the MCP protocol's stdout stream.
+
+CLI output and local HTTP/development-server errors retain diagnostic details,
+including paths. MCP clients may capture stderr in their logs, so those logs can
+also contain local paths and exception details.
+
+Diagram source, documentation, titles, and relative diagram identifiers are still
+returned when requested; this is not a content-redaction tool. Check those files for
+sensitive content before sharing the viewer or sending them to an agent.
+Screenshots and Git history also need separate review: replacing an image does not
+remove older copies from repository history.
+
 ## Development
 
 ```bash

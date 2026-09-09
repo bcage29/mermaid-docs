@@ -1,4 +1,5 @@
 import { ID_RE } from './markers.js';
+import { UserInputError } from './errors.js';
 import type { DocSection, ParsedDoc, ValidationIssue } from './types.js';
 
 /**
@@ -148,7 +149,7 @@ export function setSection(
   patch: { title?: string; body?: string; phase?: string; after?: string },
 ): ParsedDoc {
   if (!ID_RE.test(id)) {
-    throw new Error(`Invalid step id "${id}". Use letters, digits, "-" and "_", starting alphanumeric.`);
+    throw new UserInputError('Invalid step id. Use letters, digits, "-" and "_", starting alphanumeric.');
   }
   const sections = [...doc.sections];
   const index = sections.findIndex((s) => s.id === id);
