@@ -1,0 +1,4 @@
+# Release automation must not be modifiable without owner review.
+/.github/workflows/  @bcage29
+/.github/CODEOWNERS  @bcage29
+/package.json        @bcage29
