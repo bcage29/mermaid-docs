@@ -2,51 +2,37 @@
 
 [![npm](https://img.shields.io/npm/v/mermaid-docs)](https://www.npmjs.com/package/mermaid-docs)
 
-Turn any Mermaid diagram into a guided, step-by-step walkthrough — and let your coding
-agent write the documentation.
+Turn Mermaid diagrams into step-by-step walkthroughs. Each step highlights the relevant
+diagram connections, source lines, and documentation.
 
 ```bash
-npx mermaid-docs ./docs      # or the short alias: npx mmdocs ./docs
+npx mermaid-docs ./docs
 ```
 
-Opens a viewer on a free port. Step through a diagram and each step shows its
-documentation, lights up the arrows it describes, and highlights the exact `.mmd` source
-lines it refers to. Click any arrow, or any source line, to jump to the step that explains
-it. Light and dark themes follow your OS until you pick one.
+This opens a local viewer on a free port. Diagram changes appear automatically.
 
-## Why
+![Mermaid Docs showing a highlighted walkthrough step](assets/viewer.png)
 
-A Mermaid diagram in a repo is a static picture. There's no good way to explain *how to
-read it* — "the request arrives here, then the token is validated there" — while pointing
-at the part you mean. mmdocs adds that layer without taking the diagram hostage: the
-output is two ordinary files you can read, diff and review.
+## File format
 
-## The format
+Each diagram uses two files with the same name:
 
-Every diagram is two sibling files sharing a basename:
-
-```
+```text
 docs/auth/
-  auth-flow.mmd    the diagram, plus step region markers
-  auth-flow.md     all documentation for that diagram
+  auth-flow.mmd
+  auth-flow.md
 ```
 
-**Regions** in the `.mmd` mark what each step highlights. They're Mermaid comments, so the
-diagram still renders normally in GitHub, VS Code and the Mermaid live editor:
+Add step markers to the Mermaid file:
 
-```
+```mermaid
 flowchart TD
   %% @step:start user-entry
   User[User] --> Login[Login Page]
   %% @step:end user-entry
 ```
 
-A step can be marked in **more than one place**. Repeat the id wherever it applies and
-every occurrence highlights together — useful when one step describes something the diagram
-does repeatedly, like an auth block that runs before each request.
-
-**Sections** in the `.md` carry the prose. The step id is the first token of an `h2`, so
-the link between the two files is visible to anyone reading the doc:
+Describe the matching step in the Markdown file:
 
 ```markdown
 ## user-entry - User arrives
@@ -54,31 +40,31 @@ the link between the two files is visible to anyone reading the doc:
 The user hits `/login`. No session cookie is present yet.
 ```
 
-An optional **phase** tags a step and groups the walkthrough. It's a comment, so tagging a
-step never means moving it, and it renders as nothing wherever the `.md` is read:
+The ID after `##` must match the marker ID. Content before the first `##` is
+the diagram overview. Use `###` or deeper headings inside a step.
+
+To group steps into phases, add an optional comment below the heading:
 
 ```markdown
-## user-entry - User arrives
 <!-- @phase Authentication -->
 ```
 
-The same phase may appear on any steps, in any order, with others in between.
+Markers may be repeated, nested, or overlapped. Repeated IDs highlight together.
 
-The id is the first whitespace-delimited token; if the rest begins with `- `, that's the
-title. Ids may contain hyphens (`## auth-one-test - Authentication` → id `auth-one-test`).
+## MCP server
 
-Regions may nest and overlap. Text before the first `h2` is the diagram overview. Every
-`h2` declares a step, so use `h3` or deeper for subsections inside one.
+The MCP server teaches your coding agent the file format and gives it tools to
+create diagrams, manage steps, check coverage, and open the viewer.
 
-## Use it with an agent
+### VS Code
 
-Register the MCP server and talk to your agent normally — it learns the format from the
-server's instructions, so you don't have to explain it.
+Create `.vscode/mcp.json` in your workspace:
 
 ```json
 {
   "servers": {
     "mmdocs": {
+      "type": "stdio",
       "command": "npx",
       "args": ["-y", "mermaid-docs", "mcp", "${workspaceFolder}/docs"]
     }
@@ -86,37 +72,37 @@ server's instructions, so you don't have to explain it.
 }
 ```
 
-> "Document the auth flow diagram as a walkthrough."
+Run **MCP: List Servers** from the Command Palette, start `mmdocs`, and approve
+the server when prompted.
 
-The server runs the viewer too, so edits appear in your open browser immediately —
-whether they come from the agent, the CLI, or you editing the files by hand.
+### Claude Code
 
-**Tools:** `list_diagrams`, `get_diagram`, `list_connections`, `create_diagram`, `set_step`,
-`delete_step`, `reorder_steps`, `validate_diagram`, `get_viewer_url`.
+Run this from your project root:
 
-Prefer `set_step` over editing the files directly: it keeps the marker pair and the
-documentation section in sync, and handles the line arithmetic. Inserting a marker shifts
-every line below it, so writing several steps by hand usually corrupts the ranges.
+```bash
+claude mcp add --scope project --transport stdio mmdocs -- \
+  npx -y mermaid-docs mcp ./docs
+```
 
-`list_connections` shows every arrow the diagram draws and which step covers it, so an
-agent can see what it has not explained yet. `validate_diagram` reports the same thing as
-a count.
+Start Claude Code and approve the project server. Run `/mcp` to check its status.
+
+Then ask your agent: `Document the auth flow diagram as a walkthrough.`
 
 ## CLI
 
 ```bash
-mmdocs <folder>                  # serve the viewer (127.0.0.1 only)
-mmdocs <folder> --lan            # also listen on the local network, e.g. to test on a phone
-mmdocs mcp <folder>              # MCP server over stdio, plus the viewer
-mmdocs validate <folder>         # check markers, ids and coverage; exits 1 on errors
-mmdocs init <diagram.mmd>        # create the sibling .md
+mmdocs <folder>                  # Open the viewer
+mmdocs <folder> --lan            # Share on your local network
+mmdocs mcp <folder>              # Start MCP and the viewer
+mmdocs validate <folder>         # Validate all diagrams
+mmdocs init <diagram.mmd>        # Create its Markdown file
 mmdocs set-step <diagram.mmd> --id token-issue --title "Token is issued" \
     --body "..." --start 11 --end 12
 mmdocs delete-step <diagram.mmd> --id token-issue
 ```
 
-`mmdocs validate` works as a CI gate, and as a way for an agent to check its own work
-after editing the files directly.
+Run `mmdocs --help` for all options. `validate` exits with code 1 for errors,
+so it can be used in CI. Missing connection coverage is a warning.
 
 ## Keyboard
 
@@ -128,64 +114,30 @@ after editing the files directly.
 | `` ` `` | Toggle the source panel |
 | `f` | Toggle zoom-to-step |
 | `F` | Toggle fullscreen |
-| `Esc` | Clear a selected line |
 
-Every step is deep-linkable: `#/<diagram>/<step-id>`, e.g. `#/auth-flow/token-issue`.
+## Limits
 
-A diagram is addressed by its **file name**, never its path. mmdocs scans the folder you
-point it at and one level below, so folders sort your diagrams without lengthening their
-names. Names must be unique across the workspace — `mmdocs validate` fails on a clash, and
-the picker flags it.
-
-The panels all drag to resize, and the steps panel collapses to a tab down the left edge.
-
-## Notes and limits
-
-- **A step emphasises the connections it draws**, in the diagram and in the source panel.
-  Flowchart links and sequence messages are highlighted and clickable; every other diagram
-  type is left untouched rather than partly highlighted, and the source panel works for
-  all of them.
-- **`mmdocs validate` reports coverage**: how many of the arrows a diagram draws belong to
-  no step. It's a warning, not an error, so it never fails a build on its own.
-- The viewer is **read-only**. All writes go through the MCP tools, the CLI, or your
-  editor; the browser reflects them live.
-- The server binds to `127.0.0.1` only, and refuses diagram paths that escape the root.
-  `--lan` (or `--host`) widens that to the local network for testing on another device.
-  There is no authentication, so only use it on a network you trust.
+- Connection highlighting supports flowcharts and sequence diagrams. Source
+  highlighting works for all Mermaid diagram types.
+- Diagram file names must be unique within the scanned folder and its direct
+  subfolders.
+- The viewer is read-only. Edit through the CLI, MCP tools, or your editor.
+- The server binds to `127.0.0.1` by default. `--lan` has no authentication;
+  use it only on a trusted network.
 
 ## Development
 
 ```bash
 npm install
-npm run dev        # hot-reloading viewer, API and file watcher included
-npm run build      # tsup (node) + vite (viewer)
-npm test           # vitest, incl. MCP integration over stdio
-npm run test:e2e   # playwright against the CLI-started server
+npm run dev
+npm run build
+npm test
+npm run test:e2e
 ```
 
-`npm run dev` is the only mode that hot-reloads. It gives all three paths at once:
-
-- **Viewer source** (`src/web/**`) - Vite Fast Refresh applies the change in place.
-- **Server source** (`src/server/**`, `src/core/**`) - Vite restarts itself, keeping the
-  same URL.
-- **Diagram files** (the `.mmd`/`.md` being documented) - the workspace watcher pushes
-  a `changed` event over SSE; the browser refetches that diagram and the diagram list, so
-  edits, new files and deletions all land without a page reload.
-
-It documents `examples/` by default; point it elsewhere with `MMDOCS_ROOT=../my-docs npm
-run dev`. The API is mounted as Vite middleware, so it shares the dev server's port and a
-change to the server's own source restarts it in place - see
-[`vite-plugin-api.ts`](vite-plugin-api.ts).
-
-**A server started with `mmdocs serve` (or by the MCP server) serves the built bundle from
-`dist/web`.** Diagram edits still live-reload there, but changes to the viewer's own source
-need `npm run build` and a browser reload. That server also takes a fresh ephemeral port
-each time it restarts, so a tab left on the old address goes quiet - the header says
-`Not live · reload` when its event stream drops.
+Development requires Node.js 20 or newer. `npm run dev` documents `examples/`
+by default; set `MMDOCS_ROOT` to use another folder.
 
 ## License
 
 MIT
-
-Not affiliated with the [Mermaid](https://mermaid.js.org) project. Mermaid is published by
-its maintainers under `@mermaid-js/*`.
