@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 test('Vite reloads the open diagram and documentation after disk changes', async ({ page }) => {
-  const root = await mkdtemp(join(tmpdir(), 'mmdocs-dev-'));
+  const root = await mkdtemp(join(tmpdir(), 'mermaid-docs-dev-'));
   const previousRoot = process.env.MERMAID_DOCS_ROOT;
   process.env.MERMAID_DOCS_ROOT = root;
   let server: Awaited<ReturnType<typeof createServer>> | undefined;

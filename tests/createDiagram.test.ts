@@ -7,7 +7,7 @@ import { createDiagram } from '../src/server/workspace.js';
 let root: string;
 const files = { mmd: 'flowchart TD\nStart --> End', md: 'Overview' };
 
-beforeEach(async () => { root = await mkdtemp(join(tmpdir(), 'mmdocs-create-')); });
+beforeEach(async () => { root = await mkdtemp(join(tmpdir(), 'mermaid-docs-create-')); });
 afterEach(async () => { await rm(root, { recursive: true, force: true }); });
 
 describe('exclusive diagram creation', () => {
