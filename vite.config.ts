@@ -4,6 +4,7 @@ import { mmdocsApi } from './vite-plugin-api.js';
 
 export default defineConfig({
   root: 'src/web',
+  base: process.env.VITE_MMDOCS_BASE ?? '/',
   // The API and its file watcher run inside `npm run dev`, mounted by mmdocsApi() as
   // middleware. Set MMDOCS_ROOT to document a workspace other than examples/.
   plugins: [react(), mmdocsApi()],

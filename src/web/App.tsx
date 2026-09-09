@@ -151,7 +151,7 @@ export function App() {
         <a className="brand" href="#/" title="Mermaid Docs">
           <img
             className="brand-mark"
-            src="/mermaid-docs-icon-branch-transparent.svg"
+            src={`${import.meta.env.BASE_URL}mermaid-docs-icon-branch-transparent.svg`}
             alt=""
             width="22"
             height="22"
