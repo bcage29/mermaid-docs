@@ -65,9 +65,13 @@ async function openSource(page: Page): Promise<void> {
   await expect(page.getByTestId('source-panel')).toBeVisible();
 }
 
+async function writeUndocumentedEr(root: string): Promise<void> {
+  await writeFile(join(root, 'undocumented.mmd'), 'erDiagram\n  CUSTOMER ||--o{ ORDER : places\n');
+}
+
 test.describe('viewer', () => {
   test('renders a diagram and its steps', async ({ page, baseURL }) => {
-    await page.goto(baseURL);
+    await page.goto(`${baseURL}/#/${AUTH}`);
     await expect(page.getByTestId('diagram-title')).toHaveText('Authentication Flow');
     await expect(page.locator('.mermaid-host svg')).toBeVisible();
     await expect(page.getByTestId('step-item')).toHaveCount(4);
@@ -88,7 +92,7 @@ test.describe('viewer', () => {
   });
 
   test('next and previous move through the walkthrough', async ({ page, baseURL }) => {
-    await page.goto(baseURL);
+    await page.goto(`${baseURL}/#/${AUTH}`);
     await page.getByTestId('next-step').click();
     await expect(page.getByTestId('step-counter')).toHaveText('Step 1 of 4');
     await expect(page.getByTestId('step-title')).toHaveText('User arrives');
@@ -102,7 +106,7 @@ test.describe('viewer', () => {
   });
 
   test('previous is disabled on the overview and next on the last step', async ({ page, baseURL }) => {
-    await page.goto(baseURL);
+    await page.goto(`${baseURL}/#/${AUTH}`);
     await expect(page.getByTestId('prev-step')).toBeDisabled();
     // Wait for the steps: stepping is a no-op until the diagram has loaded.
     await expect(page.getByTestId('step-item')).toHaveCount(4);
@@ -154,10 +158,11 @@ test.describe('viewer', () => {
     await expect(page.locator('.mermaid-host .is-active, .mermaid-host .is-muted')).toHaveCount(0);
   });
 
-  test('a diagram type with no addressable connections is left alone', async ({ page, baseURL }) => {
-    await page.goto(`${baseURL}/#/schema`);
+  test('a diagram type with no addressable connections is left alone', async ({ page, baseURL, root }) => {
+    await writeUndocumentedEr(root);
+    await page.goto(`${baseURL}/#/undocumented`);
     await openSource(page);
-    await page.locator('.source-line[data-line="3"]').click();
+    await page.locator('.source-line[data-line="2"]').click();
     await expect(page.locator('.mermaid-host svg')).toBeVisible();
     await expect(page.locator('.mermaid-host .is-muted')).toHaveCount(0);
   });
@@ -205,7 +210,7 @@ test.describe('viewer', () => {
   });
 
   test('keyboard navigation works', async ({ page, baseURL }) => {
-    await page.goto(baseURL);
+    await page.goto(`${baseURL}/#/${AUTH}`);
     await expect(page.getByTestId('step-item')).toHaveCount(4);
     await page.keyboard.press('ArrowRight');
     await expect(page.getByTestId('step-counter')).toHaveText('Step 1 of 4');
@@ -241,12 +246,12 @@ test.describe('viewer', () => {
     await expect(page.locator('.source-line[data-highlighted="true"]')).toHaveCount(2);
   });
 
-  test('a line no step covers is focused on its own', async ({ page, baseURL }) => {
-    // schema.mmd has no documentation, so no line belongs to a step.
-    await page.goto(`${baseURL}/#/schema`);
+  test('a line no step covers is focused on its own', async ({ page, baseURL, root }) => {
+    await writeUndocumentedEr(root);
+    await page.goto(`${baseURL}/#/undocumented`);
     await openSource(page);
-    await page.locator('.source-line[data-line="3"]').click();
-    await expect(page.locator('.source-line[data-line="3"].selected')).toHaveCount(1);
+    await page.locator('.source-line[data-line="2"]').click();
+    await expect(page.locator('.source-line[data-line="2"].selected')).toHaveCount(1);
     await expect(page.locator('.source-line[data-highlighted="true"]')).toHaveCount(1);
   });
 
@@ -334,27 +339,46 @@ test.describe('viewer', () => {
     await expect.poll(offCentre).toBeLessThan(30);
   });
 
-  test('non-flowchart diagrams support line selection too', async ({ page, baseURL }) => {
+  test('non-flowchart diagrams support line selection too', async ({ page, baseURL, root }) => {
     // Line highlighting is renderer-independent, so an ER diagram behaves like any other.
-    await page.goto(`${baseURL}/#/schema`);
+    await writeUndocumentedEr(root);
+    await page.goto(`${baseURL}/#/undocumented`);
     await expect(page.locator('.mermaid-host svg')).toBeVisible();
     await openSource(page);
     await page.locator('.source-line[data-line="2"]').click();
     await expect(page.locator('.source-line[data-line="2"].selected')).toHaveCount(1);
   });
 
-  test('switches diagrams from the header picker', async ({ page, baseURL }) => {
-    await page.goto(baseURL);
-    await page.getByTestId('diagram-select').selectOption('schema');
-    await expect(page.getByTestId('diagram-title')).toHaveText('schema');
-    await expect(page).toHaveURL(/#\/schema$/);
+  test('the Agentic RAG flowchart highlights the current step', async ({ page, baseURL }) => {
+    await page.goto(`${baseURL}/#/agentic-rag/ask`);
+    await expect(page.locator('.mermaid-host path.flowchart-link')).toHaveCount(13);
+    await expect(page.locator('.mermaid-host path.flowchart-link.is-active')).toHaveCount(2);
+    await expect(page.locator('.mermaid-host path.flowchart-link.is-muted')).toHaveCount(11);
   });
 
-  test('the picker lists every diagram by name and marks undocumented ones', async ({ page, baseURL }) => {
+  test('switches diagrams from the header picker', async ({ page, baseURL }) => {
+    await page.goto(baseURL);
+    await page.getByTestId('diagram-select').selectOption('messaging');
+    await expect(page.getByTestId('diagram-title')).toHaveText('Website Sign-In and Startup');
+    await expect(page).toHaveURL(/#\/messaging$/);
+  });
+
+  test('the picker lists every diagram by name', async ({ page, baseURL }) => {
     await page.goto(baseURL);
     const options = page.getByTestId('diagram-select').locator('option');
     // Flat and name-only: the folder a diagram lives in is not part of its identity.
-    await expect(options).toHaveText(['auth-flow', 'schema (undocumented)']);
+    await expect(options).toHaveText(['agentic-rag', 'auth-flow', 'messaging']);
+  });
+
+  test('the header links to the GitHub repository', async ({ page, baseURL }) => {
+    await page.goto(baseURL);
+    const githubLink = page.getByRole('link', { name: 'View Mermaid Docs on GitHub' });
+    await expect(githubLink).toHaveAttribute('href', 'https://github.com/bcage29/mermaid-docs');
+    await expect(githubLink).toHaveAttribute('target', '_blank');
+
+    await page.setViewportSize({ width: 768, height: 800 });
+    await expect(githubLink).toBeVisible();
+    await expect.poll(() => page.locator('.app-header').evaluate((header) => header.scrollWidth <= header.clientWidth)).toBe(true);
   });
 
   test('a step marked in several places highlights all of them', async ({ page, baseURL, root }) => {
@@ -400,14 +424,14 @@ test.describe('viewer', () => {
     await expect(page).toHaveURL(/#\/auth-flow\/app-entry$/);
 
     // A name on its own opens the overview.
-    await page.goto(`${baseURL}/#/schema`);
-    await expect(page.getByTestId('diagram-title')).toHaveText('schema');
+    await page.goto(`${baseURL}/#/messaging`);
+    await expect(page.getByTestId('diagram-title')).toHaveText('Website Sign-In and Startup');
   });
 
   test('stepping does not bury the back button', async ({ page, baseURL }) => {
     await page.goto(baseURL);
-    await expect(page.getByTestId('step-item')).toHaveCount(4);
     await page.getByTestId('diagram-select').selectOption('auth-flow');
+    await expect(page.getByTestId('step-item')).toHaveCount(4);
 
     for (let i = 0; i < 3; i++) await page.getByTestId('next-step').click();
     await expect(page.getByTestId('step-counter')).toHaveText('Step 3 of 4');
@@ -479,13 +503,14 @@ test.describe('viewer', () => {
   test('lists only the first of two diagrams claiming the same name', async ({ page, baseURL, root }) => {
     // Only one file can answer to "twin", so the picker offers only that one rather than
     // a second entry that silently resolves to the first. `validate` reports the clash.
+    await mkdir(join(root, 'data'));
     await writeFile(join(root, 'auth', 'twin.mmd'), 'flowchart TD\n  A --> B\n');
     await writeFile(join(root, 'data', 'twin.mmd'), 'flowchart TD\n  C --> D\n');
 
     await page.goto(baseURL);
     const twins = page.getByTestId('diagram-select').locator('option').filter({ hasText: 'twin' });
     await expect(twins).toHaveCount(1);
-    await expect(twins).toHaveText('twin (undocumented)');
+    await expect(twins).toHaveText('twin');
   });
 
   test('shows which workspace it is serving', async ({ page, baseURL, root }) => {
@@ -509,11 +534,11 @@ test.describe('viewer', () => {
     await expect(options.filter({ hasText: 'buried' })).toHaveCount(0);
   });
 
-  test('the sidebar is the walkthrough, not a diagram list', async ({ page, baseURL }) => {
+  test('the sidebar is the walkthrough, not a diagram list', async ({ page, baseURL, root }) => {
+    await writeUndocumentedEr(root);
     await page.goto(baseURL);
     await expect(page.getByTestId('diagram-item')).toHaveCount(0);
-    // schema.mmd has no sibling .md yet, so switching to it empties the walkthrough.
-    await page.getByTestId('diagram-select').selectOption('schema');
+    await page.getByTestId('diagram-select').selectOption('undocumented');
     await expect(page.getByTestId('step-list')).toContainText('No steps yet');
   });
 
@@ -848,10 +873,10 @@ test.describe('viewer', () => {
   test('a diagram added on disk appears without a page reload', async ({ page, baseURL, root }) => {
     await page.goto(baseURL);
     const options = page.getByTestId('diagram-select').locator('option');
-    // examples/ ships auth-flow and schema; wait for the list before adding to it.
-    await expect(options).toHaveCount(2);
-    await writeFile(join(root, 'auth', 'later.mmd'), 'flowchart TD\n  A --> B\n', 'utf8');
+    // Wait for the bundled examples before adding another diagram.
     await expect(options).toHaveCount(3);
+    await writeFile(join(root, 'auth', 'later.mmd'), 'flowchart TD\n  A --> B\n', 'utf8');
+    await expect(options).toHaveCount(4);
     await expect(options.filter({ hasText: 'later' })).toHaveCount(1);
   });
 

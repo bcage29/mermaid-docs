@@ -17,9 +17,10 @@ const MAX_SCALE = 8;
 const MIN_SCALE = 0.1;
 
 /** Where each diagram type keeps its connections and their labels. */
-const HIGHLIGHT_TARGETS: Record<'flowchart' | 'sequence', { lines: string; labels: string }> = {
+const HIGHLIGHT_TARGETS: Record<'flowchart' | 'sequence' | 'architecture', { lines: string; labels: string }> = {
   flowchart: { lines: 'path.flowchart-link', labels: '.edgeLabels > *' },
   sequence: { lines: '.messageLine0, .messageLine1', labels: '.messageText' },
+  architecture: { lines: '.architecture-edges path.edge', labels: '.architecture-edge-label' },
 };
 
 /**
@@ -262,8 +263,8 @@ export function MermaidCanvas({
           const id = nodeIdFromElementId(el.id);
           return id !== undefined && rangeNodes.includes(id);
         });
-      } else if (highlight.kind === 'sequence' && highlight.enabled) {
-        const { lines, labels } = HIGHLIGHT_TARGETS.sequence;
+      } else if ((highlight.kind === 'sequence' || highlight.kind === 'architecture') && highlight.enabled) {
+        const { lines, labels } = HIGHLIGHT_TARGETS[highlight.kind];
         targets = [
           ...[...host.querySelectorAll(lines)].filter((_, i) => highlight.activeLines.has(i)),
           ...[...host.querySelectorAll(labels)].filter((_, i) => highlight.activeLabels.has(i)),

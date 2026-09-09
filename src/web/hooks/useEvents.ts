@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { STATIC_DEMO } from '../staticExamples.js';
 
 export type ConnectionStatus = 'connecting' | 'live' | 'lost';
 type ChangeListener = (id: string) => void;
@@ -16,7 +17,7 @@ type ChangeListener = (id: string) => void;
 const changeListeners = new Set<ChangeListener>();
 const statusListeners = new Set<(status: ConnectionStatus) => void>();
 let source: EventSource | undefined;
-let status: ConnectionStatus = 'connecting';
+let status: ConnectionStatus = STATIC_DEMO ? 'live' : 'connecting';
 
 function setStatus(next: ConnectionStatus): void {
   if (status === next) return;
@@ -25,7 +26,7 @@ function setStatus(next: ConnectionStatus): void {
 }
 
 function connect(): void {
-  if (source) return;
+  if (STATIC_DEMO || source) return;
   source = new EventSource('/api/events');
   source.onopen = () => setStatus('live');
   // The browser reconnects on its own; a server that moved never answers, so this stays.

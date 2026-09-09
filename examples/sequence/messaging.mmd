@@ -1,0 +1,46 @@
+sequenceDiagram
+	autonumber
+	actor User
+	participant Browser as Web Browser
+	participant App as Website Backend
+	participant IdP as Identity Provider
+	participant Profile as Profile Service
+	participant Content as Content API
+
+	%% @step:start site-request
+	User->>Browser: Open protected page
+	Browser->>App: GET /dashboard
+	App-->>Browser: Redirect to IdP with state and PKCE challenge
+	%% @step:end site-request
+
+	%% @step:start identity-check
+	Browser->>IdP: Start authorization request
+	IdP->>User: Request sign-in and consent
+	User->>IdP: Authenticate
+	IdP-->>Browser: Redirect with authorization code
+	%% @step:end identity-check
+
+	%% @step:start session-create
+	Browser->>App: Send code and original state
+	App->>App: Validate state
+	App->>IdP: Exchange code and PKCE verifier
+	IdP-->>App: Return ID and access tokens
+	App-->>Browser: Set secure session cookie
+	%% @step:end session-create
+
+	%% @step:start profile-load
+	Browser->>App: GET /api/me
+	App->>Profile: Load profile using user subject
+	Profile-->>App: Return name, roles, and preferences
+	App-->>Browser: Return profile
+	%% @step:end profile-load
+
+	%% @step:start site-load
+	par Load personalized content
+		Browser->>Content: Request dashboard data
+		Content-->>Browser: Return authorized content
+	and Prepare interface
+		Browser->>Browser: Apply preferences and permissions
+	end
+	Browser-->>User: Render personalized website
+	%% @step:end site-load

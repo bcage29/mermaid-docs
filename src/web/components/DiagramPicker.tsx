@@ -5,7 +5,7 @@ import type { DiagramSummary } from '../types.js';
  * carries it.
  */
 function optionLabel(d: DiagramSummary): string {
-  return d.hasDocumentation ? d.name : `${d.name} (undocumented)`;
+  return d.name;
 }
 
 export interface DiagramPickerProps {

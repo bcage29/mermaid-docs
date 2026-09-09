@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { STATIC_DEMO } from '../staticExamples.js';
 
 export interface Workspace {
   /** Absolute path the viewer was pointed at. */
@@ -14,9 +15,12 @@ export interface Workspace {
  * left running across a rebuild serves a new UI from an old API.
  */
 export function useWorkspace(): Workspace | undefined {
-  const [workspace, setWorkspace] = useState<Workspace>();
+  const [workspace, setWorkspace] = useState<Workspace | undefined>(
+    STATIC_DEMO ? { root: 'Bundled examples', stale: false } : undefined,
+  );
 
   useEffect(() => {
+    if (STATIC_DEMO) return;
     fetch('/api/workspace')
       .then((res) => (res.ok ? (res.json() as Promise<Workspace>) : undefined))
       .then(setWorkspace)

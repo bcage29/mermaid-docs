@@ -2,7 +2,7 @@ import { isMarkerLine } from './markers.js';
 import { parseFlowchartLine } from './mermaidIds.js';
 
 /** The diagram types whose connections can be located in the rendered SVG. */
-export type DiagramKind = 'flowchart' | 'sequence' | 'other';
+export type DiagramKind = 'flowchart' | 'sequence' | 'architecture' | 'other';
 
 /** One link or message drawn by the diagram, in the order Mermaid renders them. */
 export interface Connection {
@@ -59,9 +59,19 @@ export function detectDiagramKind(mmd: string): DiagramKind {
     if (inFrontmatter || line.startsWith('%%')) continue;
     if (/^(flowchart|graph)\b/.test(line)) return 'flowchart';
     if (/^sequenceDiagram\b/.test(line)) return 'sequence';
+    if (/^architecture-beta\b/.test(line)) return 'architecture';
     return 'other';
   }
   return 'other';
+}
+
+function architectureConnection(raw: string): { from: string; to: string } | undefined {
+  const line = raw.replace(/%%.*$/, '').trim();
+  const match = /^([A-Za-z0-9_-]+)(?:\{group\})?:[LRBT]\s+(<)?--(>)?\s+[LRBT]:([A-Za-z0-9_-]+)(?:\{group\})?$/.exec(line);
+  if (!match) return undefined;
+  const left = match[1]!;
+  const right = match[4]!;
+  return match[2] && !match[3] ? { from: right, to: left } : { from: left, to: right };
 }
 
 function sequenceConnection(raw: string): { from: string; to: string; label?: string } | undefined {
@@ -120,6 +130,13 @@ export function listConnections(mmd: string): Connection[] {
       const message = sequenceConnection(raw);
       if (!message) continue;
       out.push({ index: index++, slot: slot++, line, ...message, invisible: false });
+      continue;
+    }
+
+    if (kind === 'architecture') {
+      const edge = architectureConnection(raw);
+      if (!edge) continue;
+      out.push({ index: index++, slot: slot++, line, ...edge, invisible: false });
       continue;
     }
 

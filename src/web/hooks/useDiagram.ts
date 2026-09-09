@@ -3,6 +3,7 @@ import { buildHash, parseHash } from '../../core/route.js';
 import type { Route } from '../../core/route.js';
 import { useChanges } from './useEvents.js';
 import type { Diagram, DiagramSummary } from '../types.js';
+import { STATIC_DEMO, staticDiagram, staticDiagramList } from '../staticExamples.js';
 
 export type { Route };
 
@@ -12,13 +13,23 @@ async function getJson<T>(url: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+function getDiagramList(): Promise<DiagramSummary[]> {
+  return STATIC_DEMO ? Promise.resolve(staticDiagramList()) : getJson<DiagramSummary[]>('/api/diagrams');
+}
+
+function getDiagram(name: string): Promise<Diagram> {
+  return STATIC_DEMO
+    ? Promise.resolve().then(() => staticDiagram(name))
+    : getJson<Diagram>(`/api/diagrams/${encodeURIComponent(name)}`);
+}
+
 /** The diagram list, refreshed whenever the workspace changes. */
 export function useDiagramList(): { diagrams: DiagramSummary[]; error?: string; reload: () => void } {
   const [diagrams, setDiagrams] = useState<DiagramSummary[]>([]);
   const [error, setError] = useState<string>();
 
   const reload = useCallback(() => {
-    getJson<DiagramSummary[]>('/api/diagrams')
+    getDiagramList()
       .then((list) => {
         setDiagrams(list);
         setError(undefined);
@@ -46,7 +57,7 @@ export function useDiagram(name: string | undefined): {
 
   const load = useCallback((diagramName: string) => {
     setLoading(true);
-    getJson<Diagram>(`/api/diagrams/${encodeURIComponent(diagramName)}`)
+    getDiagram(diagramName)
       .then((d) => {
         setDiagram(d);
         setError(undefined);

@@ -13,6 +13,16 @@ This opens a local viewer on a free port. Diagram changes appear automatically.
 
 ![Mermaid Docs showing a highlighted walkthrough step](assets/viewer.png)
 
+## Hosted demo
+
+The [GitHub Pages demo](https://bcage29.github.io/mermaid-docs/) runs entirely in the
+browser with the files in `examples/` bundled at build time. It is read-only and has no
+live file watching; use the CLI when you want to browse a local workspace.
+
+Pushes to `main` deploy the demo through `.github/workflows/pages.yml`. In the repository
+settings, set **Pages > Build and deployment > Source** to **GitHub Actions** once before
+the first deployment.
+
 ## File format
 
 Each diagram uses two files with the same name:
@@ -117,7 +127,7 @@ so it can be used in CI. Missing connection coverage is a warning.
 
 ## Limits
 
-- Connection highlighting supports flowcharts and sequence diagrams. Source
+- Connection highlighting supports flowcharts, sequence diagrams, and architecture diagrams. Source
   highlighting works for all Mermaid diagram types.
 - Diagram file names must be unique within the scanned folder and its direct
   subfolders.
@@ -131,12 +141,15 @@ so it can be used in CI. Missing connection coverage is a warning.
 npm install
 npm run dev
 npm run build
+npm run build:pages
 npm test
 npm run test:e2e
 ```
 
 Development requires Node.js 20 or newer. `npm run dev` documents `examples/`
-by default; set `MMDOCS_ROOT` to use another folder.
+by default; set `MMDOCS_ROOT` to use another folder. `build:pages` creates the static,
+bundled-example version in `dist/web`; set `VITE_MMDOCS_BASE` when it will be served from
+a subpath.
 
 ## License
 
