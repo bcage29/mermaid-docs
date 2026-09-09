@@ -7,17 +7,11 @@ Things worth a decision or a follow-up. Written 2026-09-05, at the end of the in
 ### 1. ~~The npm name may not be available~~ — resolved 2026-09-06
 
 **Closed.** Published name is **`mermaid-docs`**, which was fully available. The package
-installs two commands, `mermaid-docs` and `mmdocs`, so the short form still works.
+installs the `mermaid-docs` command and uses the same name for its MCP server.
 
-npm's block on reusing an unpublished name is 24 hours, not permanent — only the exact
-`name@version` pair is burned forever. `mmdocs@0.0.1` can never exist again, but that is
-irrelevant at 0.1.0. `mermaid-docs` had no history at all.
-
-Chosen for discoverability: people search npm for "mermaid", never for "mmdocs", and the
+Chosen for discoverability: the name includes "mermaid", and the
 ecosystem convention is `rehype-mermaid` / `mdx-mermaid` / `astro-mermaid`. It also makes
 an MCP config self-documenting to whoever reads it later.
-
-Still free if ever wanted: `mermaid-doc`, `mmdoc`, `mermaidocs`, `mermaid-walkthrough`.
 
 ### 2. ~~Diagram highlighting only works for flowcharts~~ — resolved 2026-09-08
 
@@ -85,7 +79,7 @@ real render rather than inferred:
   re-applies that prop whenever the pan/zoom library re-renders, replacing the `<svg>`
   element even though the markup is identical - toggling the source panel was enough. The
   highlight classes went with it and were re-applied a frame later, which read as a
-  flicker. Handing the subtree to React is what causes this; mmdocs-old never hit it
+  flicker. Handing the subtree to React is what causes this; the previous viewer never hit it
   because it owned the DOM itself.
 - **Highlight classes are not transitioned.** A transition turns any momentary loss of
   those classes into a visible fade, so the fix above and this one go together.

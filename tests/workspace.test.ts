@@ -10,7 +10,7 @@ let root: string;
 let outside: string;
 
 beforeEach(async () => {
-  temp = await mkdtemp(join(tmpdir(), 'mmdocs-workspace-'));
+  temp = await mkdtemp(join(tmpdir(), 'mermaid-docs-workspace-'));
   root = join(temp, 'workspace');
   outside = join(temp, 'outside');
   await mkdir(root);

@@ -16,7 +16,7 @@ function topLevelGroup(svg: SVGSVGElement, el: Element): Element | undefined {
   return node ?? undefined;
 }
 
-const BACKDROP_CLASS = 'mmdocs-actor-backdrop';
+const BACKDROP_CLASS = 'mermaid-docs-actor-backdrop';
 
 /**
  * Put the autonumber discs on top of the lifelines.
@@ -36,8 +36,8 @@ export function raiseSequenceNumbers(host: HTMLElement): void {
   }
 
   for (const numeral of svg.querySelectorAll<SVGTextElement>('text.sequenceNumber')) {
-    if (numeral.dataset.mmdocsRaised) continue;
-    numeral.dataset.mmdocsRaised = 'true';
+    if (numeral.dataset.mermaidDocsRaised) continue;
+    numeral.dataset.mermaidDocsRaised = 'true';
     const disc = numeral.previousElementSibling;
     // Guarded, so a real message line is never mistaken for a disc and dragged out of place.
     if (
@@ -104,12 +104,12 @@ export function positionStickyActors(host: HTMLElement, scale: number): void {
   const header = measure(svg);
   if (!header) return;
 
-  const previousShift = Number(header.backdrop.dataset.mmdocsShift ?? 0);
+  const previousShift = Number(header.backdrop.dataset.mermaidDocsShift ?? 0);
   const gap = viewport.getBoundingClientRect().top - header.firstActor.getBoundingClientRect().top;
   const shift = Math.min(Math.max(0, previousShift + gap / scale), header.maxShift);
   const transform = shift > 0 ? `translateY(${shift}px)` : '';
 
-  header.backdrop.dataset.mmdocsShift = String(shift);
+  header.backdrop.dataset.mermaidDocsShift = String(shift);
   header.backdrop.style.transform = transform;
   header.backdrop.style.opacity = shift > 0 ? '1' : '0';
   for (const group of header.groups) (group as SVGGElement).style.transform = transform;

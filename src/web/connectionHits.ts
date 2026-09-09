@@ -6,7 +6,7 @@
  * real link still paints on top.
  */
 
-const HIT_CLASS = 'mmdocs-hit';
+const HIT_CLASS = 'mermaid-docs-hit';
 
 const SOURCE_SELECTOR: Record<'flowchart' | 'sequence' | 'architecture', string> = {
   flowchart: 'path.flowchart-link',
