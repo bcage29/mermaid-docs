@@ -21,8 +21,8 @@ beforeAll(async () => {
   client = new Client({ name: 'test', version: '1.0.0' });
   await client.connect(
     new StdioClientTransport({
-      command: 'npx',
-      args: ['tsx', 'src/cli/index.ts', 'mcp', root],
+      command: process.execPath,
+      args: ['--import', 'tsx', 'src/cli/index.ts', 'mcp', root],
       cwd: process.cwd(),
       stderr: 'pipe',
     }),

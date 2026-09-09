@@ -70,6 +70,7 @@
     "rehype-highlight": "^7.0.2",
     "remark-gfm": "^4.0.1",
     "tsup": "^8.3.5",
+    "tsx": "^4.23.13",
     "typescript": "^5.7.2",
     "vite": "^8.2.2",
     "vitest": "^5.0.0"

@@ -34,7 +34,7 @@ describe('local CLI diagnostics', () => {
 
   it('preserves filesystem details on stderr and exits unsuccessfully', async () => {
     const mmdPath = join(root, 'missing.mmd');
-    await expect(promisify(execFile)('npx', ['tsx', 'src/cli/index.ts', 'init', mmdPath]))
+    await expect(promisify(execFile)(process.execPath, ['--import', 'tsx', 'src/cli/index.ts', 'init', mmdPath]))
       .rejects.toMatchObject({ code: 1, stdout: '', stderr: expect.stringContaining(mmdPath) });
   }, 120_000);
 });
