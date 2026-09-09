@@ -787,11 +787,13 @@ test.describe('viewer', () => {
     await page.mouse.move(box.x + box.width / 2, box.y + 20, { steps: 10 });
     await page.mouse.up();
 
-    const after = await geometry();
     // The diagram really moved, and the row stayed at the top instead of going with it.
-    expect(after.svgTop).toBeLessThan(before.svgTop - 50);
-    expect(after.actorTop).toBeGreaterThanOrEqual(before.viewportTop - 2);
-    expect(after.actorTop).toBeLessThan(before.viewportTop + 30);
+    await expect(async () => {
+      const after = await geometry();
+      expect(after.svgTop).toBeLessThan(before.svgTop - 50);
+      expect(after.actorTop).toBeGreaterThanOrEqual(before.viewportTop - 2);
+      expect(after.actorTop).toBeLessThan(before.viewportTop + 30);
+    }).toPass();
   });
 
   test('fit centres the diagram whatever its proportions', async ({ page, baseURL, root }) => {
