@@ -2,6 +2,7 @@ import { resolve } from 'node:path';
 import type { Plugin } from 'vite';
 import { createApi } from './src/server/http.js';
 import { watchWorkspace } from './src/server/watch.js';
+import { diagramName } from './src/core/route.js';
 
 /**
  * Run the viewer's API inside `npm run dev`, so one command gives both hot-reload paths:
@@ -24,7 +25,7 @@ export function mmdocsApi(): Plugin {
     configureServer(server) {
       const api = createApi(root);
       const watcher = watchWorkspace(root, (ids) => {
-        for (const id of ids) api.broadcast('changed', { id });
+        for (const id of ids) api.broadcast('changed', { name: diagramName(id) });
       });
 
       server.middlewares.use((req, res, next) => {
