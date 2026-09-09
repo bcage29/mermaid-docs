@@ -41,7 +41,7 @@ describe('exclusive diagram creation', () => {
 
   it('does not follow a dangling sibling link', async () => {
     await symlink(join(root, 'missing.txt'), join(root, 'demo.md'));
-    await expect(createDiagram(root, 'demo.mmd', files)).rejects.toThrow('already exists');
+    await expect(createDiagram(root, 'demo.mmd', files)).rejects.toThrow('Symbolic links are not allowed');
     await expect(readFile(join(root, 'missing.txt'))).rejects.toMatchObject({ code: 'ENOENT' });
     await expect(readFile(join(root, 'demo.mmd'))).rejects.toMatchObject({ code: 'ENOENT' });
   });

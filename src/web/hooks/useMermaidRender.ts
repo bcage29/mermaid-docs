@@ -11,7 +11,7 @@ function initMermaid(theme: 'default' | 'dark'): void {
   mermaid.initialize({
     startOnLoad: false,
     theme,
-    securityLevel: 'loose',
+    securityLevel: 'strict',
     // Mermaid otherwise writes an inline max-width onto the <svg>, which caps how far the
     // diagram can grow and makes zoom appear stuck well below the configured maximum.
     flowchart: { useMaxWidth: false, htmlLabels: true },

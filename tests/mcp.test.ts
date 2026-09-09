@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { mkdtemp, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, symlink, writeFile } from 'node:fs/promises';
 import { rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -141,6 +141,64 @@ describe('mcp server', () => {
     expect(JSON.stringify(collision)).toContain('already exists');
     expect(await readFile(join(root, 'created.mmd'), 'utf8')).toBe(MMD);
     expect(await readFile(join(root, 'created.md'), 'utf8')).toBe(originalDoc);
+  });
+
+  it('rejects linked documentation through HTTP and MCP without changing either file', async () => {
+    const outside = await mkdtemp(join(tmpdir(), 'mmdocs-outside-'));
+    const diagramPath = join(root, 'linked.mmd');
+    const docPath = join(root, 'linked.md');
+    const target = join(outside, 'private.txt');
+    try {
+      await writeFile(target, 'SYNTHETIC_OUTSIDE_CONTENT');
+      await writeFile(diagramPath, MMD);
+      await symlink(target, docPath);
+
+      const read = await client.callTool({ name: 'get_diagram', arguments: { id: 'linked.mmd' } });
+      expect(read.isError).toBe(true);
+      expect(JSON.stringify(read)).not.toContain('SYNTHETIC_OUTSIDE_CONTENT');
+
+      const updated = await client.callTool({
+        name: 'set_step',
+        arguments: { id: 'linked.mmd', stepId: 'begin', body: 'Changed', startLine: 2, endLine: 2 },
+      });
+      expect(updated.isError).toBe(true);
+
+      const created = await client.callTool({
+        name: 'create_diagram', arguments: { path: 'linked.mmd', mmd: 'Changed' },
+      });
+      expect(created.isError).toBe(true);
+      expect(await readFile(target, 'utf8')).toBe('SYNTHETIC_OUTSIDE_CONTENT');
+      expect(await readFile(diagramPath, 'utf8')).toBe(MMD);
+
+      const viewer = await client.callTool({ name: 'get_viewer_url', arguments: {} });
+      const { url } = viewer.structuredContent as { url: string };
+      const response = await fetch(`${url}/api/diagrams/linked`);
+      expect(response.ok).toBe(false);
+      const body = await response.text();
+      expect(body).toMatch(/symbolic link/i);
+      expect(body).not.toContain('SYNTHETIC_OUTSIDE_CONTENT');
+    } finally {
+      await rm(docPath, { force: true });
+      await rm(diagramPath, { force: true });
+      await rm(outside, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects creation through a linked parent before creating outside directories', async () => {
+    const outside = await mkdtemp(join(tmpdir(), 'mmdocs-outside-'));
+    const link = join(root, 'linked-directory');
+    try {
+      await symlink(outside, link, 'dir');
+      const created = await client.callTool({
+        name: 'create_diagram', arguments: { path: 'linked-directory/new/demo.mmd', mmd: MMD },
+      });
+      expect(created.isError).toBe(true);
+      expect(JSON.stringify(created)).toMatch(/symbolic link/i);
+      await expect(readFile(join(outside, 'new'))).rejects.toMatchObject({ code: 'ENOENT' });
+    } finally {
+      await rm(link, { force: true });
+      await rm(outside, { recursive: true, force: true });
+    }
   });
 
   it('deep-links the viewer to a step', async () => {

@@ -131,6 +131,10 @@ so it can be used in CI. Missing connection coverage is a warning.
   highlighting works for all Mermaid diagram types.
 - Diagram file names must be unique within the scanned folder and its direct
   subfolders.
+- Diagram files, sibling documentation, and directories below the workspace root
+  must not be symbolic links. The selected root itself may be a symbolic link.
+  Path checks do not sandbox a workspace against concurrent changes by untrusted
+  local processes.
 - The viewer is read-only. Edit through the CLI, MCP tools, or your editor.
 - The server binds to `127.0.0.1` by default. `--lan` has no authentication;
   use it only on a trusted network.

@@ -1,5 +1,5 @@
 import { open, readFile, readdir, stat, unlink, writeFile, type FileHandle } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import { existsSync, lstatSync } from 'node:fs';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { buildDiagram } from '../core/diagramModel.js';
 import type { Diagram } from '../core/types.js';
@@ -84,8 +84,25 @@ export function duplicateNames(refs: DiagramRef[]): Map<string, DiagramRef[]> {
   return byName;
 }
 
+function assertNoSymlinks(root: string, filePath: string): void {
+  let current = resolve(root);
+  for (const part of relative(current, filePath).split(sep)) {
+    current = join(current, part);
+    let info;
+    try {
+      info = lstatSync(current);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return;
+      throw error;
+    }
+    if (info.isSymbolicLink()) {
+      throw new Error('Symbolic links are not allowed in diagram paths.');
+    }
+  }
+}
+
 /**
- * Resolve a diagram id to an absolute path, refusing anything that escapes the root.
+ * Resolve a diagram id, rejecting traversal and symlinks in either sibling path.
  * The id comes from HTTP and from agent tool calls, so it is untrusted.
  */
 export function resolveDiagramPath(root: string, id: string): string {
@@ -95,6 +112,8 @@ export function resolveDiagramPath(root: string, id: string): string {
     throw new Error(`Diagram id "${id}" resolves outside the workspace root.`);
   }
   if (!/\.mmd$/i.test(abs)) throw new Error(`Diagram id "${id}" must name a .mmd file.`);
+  assertNoSymlinks(root, abs);
+  assertNoSymlinks(root, docPathFor(abs));
   return abs;
 }
 
