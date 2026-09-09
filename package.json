@@ -1,6 +1,6 @@
 {
   "name": "mermaid-docs",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Mermaid diagram viewer and step-by-step documentation tool, with an MCP server for coding agents",
   "author": "Brennen Cage",
   "repository": {
