@@ -1,6 +1,6 @@
 {
   "name": "mermaid-docs",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Turn Mermaid diagrams into guided, step-by-step walkthroughs - a local viewer plus an MCP server that lets coding agents write the walkthrough for you",
   "author": "Brennen Cage",
   "repository": {
