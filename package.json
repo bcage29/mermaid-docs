@@ -1,7 +1,7 @@
 {
   "name": "mermaid-docs",
   "version": "0.2.0",
-  "description": "Mermaid diagram viewer and step-by-step documentation tool, with an MCP server for coding agents",
+  "description": "Turn Mermaid diagrams into guided, step-by-step walkthroughs - a local viewer plus an MCP server that lets coding agents write the walkthrough for you",
   "author": "Brennen Cage",
   "repository": {
     "type": "git",
@@ -35,8 +35,18 @@
     "mermaid",
     "documentation",
     "diagram",
+    "diagrams",
     "mcp",
-    "viewer"
+    "mcp-server",
+    "model-context-protocol",
+    "viewer",
+    "walkthrough",
+    "flowchart",
+    "sequence-diagram",
+    "architecture",
+    "docs-as-code",
+    "developer-onboarding",
+    "cli"
   ],
   "scripts": {
     "prepublishOnly": "npm run typecheck && npm run build && npm test",

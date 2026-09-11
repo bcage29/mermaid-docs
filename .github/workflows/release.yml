@@ -98,9 +98,10 @@ jobs:
     permissions:
       contents: write
     steps:
-      # Draft until the staged version is approved on npm, so the release
-      # never advertises a version that isn't on the registry yet.
-      - name: Create draft GitHub release
-        run: gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --generate-notes --verify-tag --draft
+      # Published immediately rather than as a draft. This can briefly advertise a
+      # version that is still awaiting staged-publish approval on npm, so approve
+      # the staged version promptly after the tag is pushed.
+      - name: Create GitHub release
+        run: gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --generate-notes --verify-tag --latest
         env:
           GH_TOKEN: ${{ github.token }}
