@@ -733,6 +733,25 @@ test.describe('viewer', () => {
     expect(await panelWidth()).toBe(0);
   });
 
+  test('the docs panel collapses and comes back', async ({ page, baseURL }) => {
+    await page.goto(baseURL);
+    const panelWidth = () =>
+      page.evaluate(() => Math.round(document.querySelector('.docs-panel-slot')!.getBoundingClientRect().width));
+    expect(await panelWidth()).toBeGreaterThan(80);
+
+    await page.getByTestId('collapse-docs').click();
+    await expect(page.getByTestId('expand-docs')).toBeVisible();
+    expect(await panelWidth()).toBe(0);
+
+    await page.getByTestId('expand-docs').click();
+    await expect(page.getByTestId('expand-docs')).toHaveCount(0);
+    expect(await panelWidth()).toBeGreaterThan(80);
+
+    // The title collapses it too, so the corner button is not the only way.
+    await page.getByTestId('collapse-docs-header').click();
+    expect(await panelWidth()).toBe(0);
+  });
+
   test('the theme can be switched and is remembered', async ({ page, baseURL }) => {
     await page.goto(baseURL);
     // The default follows the OS, so this asserts the switch, not a particular start.
