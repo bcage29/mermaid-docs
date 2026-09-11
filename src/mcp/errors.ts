@@ -18,6 +18,6 @@ export function mcpErrorMessage(error: unknown): string {
     const message = Object.hasOwn(FILE_ERRORS, error.code) ? FILE_ERRORS[error.code] : undefined;
     if (message) return message;
   }
-  process.stderr.write(`mmdocs MCP tool failed: ${inspect(error)}\n`);
+  process.stderr.write(`mermaid-docs MCP tool failed: ${inspect(error)}\n`);
   return 'Unable to complete the operation. Check the input and try again.';
 }

@@ -9,7 +9,7 @@ import { runSetStep } from '../src/cli/commands/setStep.js';
 let root: string;
 
 beforeEach(async () => {
-  root = await mkdtemp(join(tmpdir(), 'mmdocs-cli-'));
+  root = await mkdtemp(join(tmpdir(), 'mermaid-docs-cli-'));
 });
 
 afterEach(async () => {
