@@ -3,6 +3,22 @@ import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 
+/** Double chevron pointing at the edge the pane collapses towards. */
+function CollapseIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" focusable="false">
+      <path
+        d="M11.5 6.5L17 12l-5.5 5.5M6 6.5L11.5 12L6 17.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export interface DocsPanelProps {
   title: string;
   body: string;
@@ -12,6 +28,7 @@ export interface DocsPanelProps {
   phase?: string;
   fontScale: number;
   onFontScale: (next: number) => void;
+  onCollapse?: () => void;
 }
 
 /** Copy button injected into every fenced code block. */
@@ -33,7 +50,7 @@ function CodeBlock({ children, ...props }: React.HTMLAttributes<HTMLPreElement>)
   );
 }
 
-export function DocsPanel({ title, body, position, phase, fontScale, onFontScale }: DocsPanelProps) {
+export function DocsPanel({ title, body, position, phase, fontScale, onFontScale, onCollapse }: DocsPanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // A new step starts at the top of its documentation, not wherever the last one ended.
@@ -44,7 +61,26 @@ export function DocsPanel({ title, body, position, phase, fontScale, onFontScale
   return (
     <div className="docs-panel" data-testid="docs-panel">
       <div className="panel-header docs-header">
-        <div>
+        {/* A div, not a button: a heading is not allowed inside one. */}
+        <div
+          className={`docs-title${onCollapse ? ' clickable' : ''}`}
+          {...(onCollapse
+            ? {
+                role: 'button',
+                tabIndex: 0,
+                onClick: onCollapse,
+                onKeyDown: (e: React.KeyboardEvent) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onCollapse();
+                  }
+                },
+                'aria-label': 'Hide documentation',
+                title: 'Hide documentation',
+                'data-testid': 'collapse-docs-header',
+              }
+            : {})}
+        >
           {position && <span className="step-counter-label">{position}</span>}
           <h2 data-testid="step-title">{title}</h2>
         </div>
@@ -72,6 +108,18 @@ export function DocsPanel({ title, body, position, phase, fontScale, onFontScale
           </p>
         )}
       </div>
+      {onCollapse && (
+        <button
+          type="button"
+          className="docs-collapse"
+          onClick={onCollapse}
+          data-testid="collapse-docs"
+          aria-label="Hide documentation"
+          title="Hide documentation"
+        >
+          <CollapseIcon />
+        </button>
+      )}
     </div>
   );
 }

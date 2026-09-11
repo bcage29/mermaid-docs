@@ -43,6 +43,8 @@ export function App() {
   const { isFullscreen, toggle: toggleFullscreen } = useFullscreen(useCallback(() => bodyRef.current, []));
   const [sidebar, setSidebar] = usePanelCallbackRef();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [docs, setDocs] = usePanelCallbackRef();
+  const [docsCollapsed, setDocsCollapsed] = useState(false);
 
   // Land on the first diagram so the app is never blank on first load.
   const activeName = route.name ?? diagrams[0]?.name;
@@ -302,7 +304,27 @@ export function App() {
         </Panel>
         <Separator className="resize-handle" />
 
-        <Panel defaultSize="30" minSize="15" collapsible id="docs">
+        {docsCollapsed && (
+          <button
+            type="button"
+            className="sidebar-reveal docs-reveal"
+            onClick={() => docs?.expand()}
+            data-testid="expand-docs"
+            title="Show documentation"
+          >
+            <span>Docs</span>
+          </button>
+        )}
+
+        <Panel
+          defaultSize="30"
+          minSize="15"
+          collapsible
+          id="docs"
+          className="docs-panel-slot"
+          panelRef={setDocs}
+          onResize={(size) => setDocsCollapsed(size.asPercentage === 0)}
+        >
           <DocsPanel
             title={step?.title ?? diagram?.title ?? 'Mermaid Docs'}
             body={step?.body ?? diagram?.overview ?? ''}
@@ -310,6 +332,7 @@ export function App() {
             {...(stepIndex > 0 ? { position: `Step ${stepIndex} of ${total - 1}` } : {})}
             fontScale={fontScale}
             onFontScale={setFontScale}
+            onCollapse={() => docs?.collapse()}
           />
         </Panel>
       </SplitLayout>
