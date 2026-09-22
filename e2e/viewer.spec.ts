@@ -546,6 +546,8 @@ test.describe('viewer', () => {
     await page.goto(`${baseURL}/#/${AUTH}`);
     const fill = page.locator('.step-progress-fill');
     await expect(fill).toHaveAttribute('style', 'width: 0%;');
+    // Wait for the steps: stepping is a no-op until the diagram has loaded.
+    await expect(page.getByTestId('step-item')).toHaveCount(4);
     await page.keyboard.press('End');
     await expect(fill).toHaveAttribute('style', 'width: 100%;');
   });

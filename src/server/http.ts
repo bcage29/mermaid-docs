@@ -1,5 +1,6 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { basename, extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { networkInterfaces } from 'node:os';
@@ -13,6 +14,70 @@ function lanAddress(): string {
     }
   }
   return 'localhost';
+}
+
+/**
+ * Whether something is expected to forward a port to this process.
+ *
+ * In a dev container the browser is outside it, so it connects to whatever port the
+ * forwarder picked: `localhost:8081` reaching a server bound to 8080 is ordinary there
+ * and a sign of a rewritten request anywhere else. The bound port is therefore only
+ * compared when nothing sits in between.
+ *
+ * MERMAID_DOCS_FORWARDED settles it either way when the guess is wrong.
+ */
+export function isForwarded(): boolean {
+  const override = process.env.MERMAID_DOCS_FORWARDED;
+  if (override !== undefined && override !== '') return override !== '0' && override !== 'false';
+  return (
+    process.env.REMOTE_CONTAINERS === 'true' ||
+    process.env.CODESPACES === 'true' ||
+    existsSync('/.dockerenv')
+  );
+}
+
+/**
+ * Normalize a host for comparison, unwrapping IPv4-mapped IPv6 and bracketing IPv6.
+ *
+ * A name the user typed may carry the port they reach it on - `viewer.internal:8080` -
+ * which is dropped, because what is compared is `URL.hostname`. Only a bare IPv6 address
+ * is left with colons in it, and that is what the bracketing distinguishes.
+ */
+function hostname(host: string): string {
+  const normalized = host.toLowerCase().replace(/^::ffff:/, '');
+  const bracketed = /^\[(.+)\](?::\d+)?$/.exec(normalized);
+  if (bracketed) return `[${bracketed[1]}]`;
+  // Two or more colons is an IPv6 address; exactly one is a host and the port after it.
+  if (normalized.indexOf(':') !== normalized.lastIndexOf(':')) return `[${normalized}]`;
+  return normalized.replace(/:\d+$/, '');
+}
+
+interface AccessPolicy {
+  /** Names for the socket itself, which the browser reaches on the port that was bound. */
+  direct: Set<string>;
+  /** Names of a proxy in front of it, which answers on a port of its own. A leading dot
+   *  matches any subdomain. */
+  proxied: Set<string>;
+  forwarded: boolean;
+}
+
+/**
+ * Which hosts may reach the server, given the interface bound and any extra names.
+ *
+ * Codespaces publishes the viewer under its own forwarding domain, so the browser sends
+ * that name and never localhost. Nothing else is inferred: another proxy or tunnel has to
+ * be named with --allow-host.
+ */
+function accessPolicy(configuredHost?: string, allowedHosts: readonly string[] = []): AccessPolicy {
+  const direct = new Set(['localhost', '127.0.0.1', '[::1]']);
+  if (configuredHost && configuredHost !== '0.0.0.0' && configuredHost !== '::') {
+    direct.add(hostname(configuredHost));
+  }
+  const proxied = new Set<string>();
+  const codespaces = process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN;
+  if (codespaces) proxied.add(`.${hostname(codespaces)}`);
+  for (const host of allowedHosts) if (host) proxied.add(hostname(host));
+  return { direct, proxied, forwarded: isForwarded() };
 }
 
 /** Where `vite build` puts the viewer, relative to the compiled server. */
@@ -69,24 +134,29 @@ function sendJson(res: ServerResponse, status: number, body: unknown): void {
   res.end(payload);
 }
 
-function requestIsAllowed(req: IncomingMessage, configuredHost?: string): boolean {
+function requestIsAllowed(req: IncomingMessage, policy: AccessPolicy): boolean {
   const authority = req.headers.host;
   if (!authority || /[\s/@?#\\]/.test(authority)) return false;
   try {
     const protocol = 'encrypted' in req.socket && req.socket.encrypted ? 'https:' : 'http:';
     const address = new URL(`${protocol}//${authority}`);
-    const hostname = (host: string) => {
-      const normalized = host.toLowerCase().replace(/^::ffff:/, '');
-      return normalized.includes(':') && !normalized.startsWith('[') ? `[${normalized}]` : normalized;
-    };
-    const allowed = new Set(['localhost', '127.0.0.1', '[::1]']);
-    if (req.socket.localAddress) allowed.add(hostname(req.socket.localAddress));
-    if (configuredHost && configuredHost !== '0.0.0.0' && configuredHost !== '::') {
-      allowed.add(hostname(configuredHost));
+    const proxied = [...policy.proxied].some((host) =>
+      host.startsWith('.') ? address.hostname.endsWith(host) : address.hostname === host,
+    );
+    if (!proxied) {
+      const direct = new Set(policy.direct);
+      if (req.socket.localAddress) direct.add(hostname(req.socket.localAddress));
+      if (!direct.has(address.hostname)) return false;
+      // A forwarder answers on a port of its own and connects to this one, so the two
+      // only have to agree when the browser reached the socket itself.
+      const port = Number(address.port || (protocol === 'https:' ? 443 : 80));
+      if (!policy.forwarded && port !== req.socket.localPort) return false;
     }
-    if (!allowed.has(address.hostname)) return false;
-    if (Number(address.port || (protocol === 'https:' ? 443 : 80)) !== req.socket.localPort) return false;
-    if (req.headers.origin !== undefined && req.headers.origin !== address.origin) return false;
+    // Compared by authority rather than by origin: a tunnel terminates TLS in front of
+    // this server, so an https page reaches a plain http socket and the schemes differ.
+    if (req.headers.origin !== undefined && new URL(req.headers.origin).host !== address.host) {
+      return false;
+    }
     return req.headers['sec-fetch-site'] !== 'cross-site';
   } catch {
     return false;
@@ -118,15 +188,20 @@ export interface Api {
  * `mermaid-docs serve` puts it behind its own HTTP server; `npm run dev` mounts it as Vite
  * middleware. Both run this same handler rather than a copy.
  */
-export function createApi(root: string, configuredHost?: string): Api {
+export function createApi(
+  root: string,
+  configuredHost?: string,
+  allowedHosts: readonly string[] = [],
+): Api {
   const clients = new Set<ServerResponse>();
+  const policy = accessPolicy(configuredHost, allowedHosts);
 
   async function handle(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
     const url = new URL(req.url ?? '/', 'http://localhost');
     const path = decodeURIComponent(url.pathname);
     if (!path.startsWith('/api/')) return false;
 
-    if (!requestIsAllowed(req, configuredHost)) {
+    if (!requestIsAllowed(req, policy)) {
       sendJson(res, 403, { error: 'Forbidden' });
       return true;
     }
@@ -241,13 +316,19 @@ async function serveStatic(path: string, res: ServerResponse): Promise<void> {
  *
  * `host` may be widened to reach the viewer from another device on the network. The
  * server has no authentication and serves everything under `root`, so that is strictly
- * opt-in.
+ * opt-in. `allowedHosts` names any proxy or tunnel the browser reaches it through.
  */
-export async function startServer(root: string, requestedPort = 0, host = '127.0.0.1'): Promise<ServerHandle> {
-  const api = createApi(root, host);
+export async function startServer(
+  root: string,
+  requestedPort = 0,
+  host = '127.0.0.1',
+  allowedHosts: readonly string[] = [],
+): Promise<ServerHandle> {
+  const api = createApi(root, host, allowedHosts);
+  const policy = accessPolicy(host, allowedHosts);
 
   const server = createServer((req, res) => {
-    if (!requestIsAllowed(req, host)) {
+    if (!requestIsAllowed(req, policy)) {
       sendJson(res, 403, { error: 'Forbidden' });
       return;
     }
@@ -271,8 +352,11 @@ export async function startServer(root: string, requestedPort = 0, host = '127.0
 
   const address = server.address();
   const port = typeof address === 'object' && address ? address.port : requestedPort;
-  // 0.0.0.0 is not a usable address in a browser; report a reachable one.
-  const displayHost = host === '0.0.0.0' || host === '::' ? lanAddress() : host;
+  // 0.0.0.0 is not a usable address in a browser; report a reachable one. A container's
+  // own address is not reachable from outside it either, so there loopback is the answer
+  // and the forwarder carries it the rest of the way.
+  const wildcard = host === '0.0.0.0' || host === '::';
+  const displayHost = wildcard ? (policy.forwarded ? 'localhost' : lanAddress()) : host;
 
   return {
     server,
@@ -282,7 +366,13 @@ export async function startServer(root: string, requestedPort = 0, host = '127.0
     broadcast: api.broadcast,
     async close() {
       api.closeClients();
-      await new Promise<void>((resolve) => server.close(() => resolve()));
+      const closed = new Promise<void>((resolve) => server.close(() => resolve()));
+      // server.close() only stops new connections and waits out the old ones. The browser
+      // holds keep-alive sockets open and its event stream reconnects the moment it is
+      // ended, so waiting for them means never resolving - the host eventually kills the
+      // process instead.
+      server.closeAllConnections();
+      await closed;
     },
   };
 }

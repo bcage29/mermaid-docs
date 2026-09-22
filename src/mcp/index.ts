@@ -336,11 +336,17 @@ export async function runMcp({ root }: McpOptions): Promise<void> {
   const transport = new StdioServerTransport(process.stdin, transportStream);
   await server.connect(transport);
 
-  const shutdown = async () => {
-    await watcher.close();
-    await http.close();
-    process.exit(0);
+  let stopping = false;
+  const shutdown = () => {
+    if (stopping) return;
+    stopping = true;
+    void Promise.all([watcher.close(), http.close()]).finally(() => process.exit(0));
   };
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);
+  // A host stops a stdio server by closing stdin and only kills it if that is ignored.
+  // The SDK's transport listens for data and errors but not for the end of the stream,
+  // and the viewer's HTTP server holds the event loop open, so nothing here would notice.
+  process.stdin.on('end', shutdown);
+  process.stdin.on('close', shutdown);
 }
