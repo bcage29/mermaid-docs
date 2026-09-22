@@ -255,16 +255,19 @@ body {
    between actor boxes while the diagram is panned underneath it. */
 .mermaid-host .mermaid-docs-actor-backdrop { fill: var(--bg); opacity: 0; pointer-events: none; }
 
+/* Faded until pointed at, so it sits over the diagram without competing with it - a
+   sequence diagram freezes its participant row at the top of the canvas, directly under
+   this. */
 .canvas-toolbar {
   position: absolute; top: 10px; right: 10px; z-index: 5;
   display: flex; align-items: center; gap: 4px;
   background: var(--bg-raised); border: 1px solid var(--border);
   border-radius: 8px; padding: 4px;
+  opacity: .35; transition: opacity .15s ease;
 }
 
 /* Same shape as the zoom toolbar, opposite corner. Anchored to the panel rather than the
-   canvas so it survives a diagram that fails to render. Faded until pointed at, so it sits
-   over the diagram without competing with it. */
+   canvas so it survives a diagram that fails to render. */
 .canvas-settings {
   position: absolute; bottom: 10px; left: 10px; z-index: 5;
   display: flex; align-items: center; gap: 10px;
@@ -274,6 +277,8 @@ body {
 }
 /* :has(:focus-visible) rather than :focus-within, which a clicked checkbox keeps holding
    open long after the pointer has left. */
+.canvas-toolbar:hover,
+.canvas-toolbar:has(:focus-visible),
 .canvas-settings:hover,
 .canvas-settings:has(:focus-visible) { opacity: 1; }
 .canvas-settings label {
