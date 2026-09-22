@@ -1,6 +1,7 @@
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { spawn } from 'node:child_process';
 import { mkdtemp, mkdir, readFile, symlink, writeFile } from 'node:fs/promises';
 import { rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -237,4 +238,31 @@ describe('mcp server', () => {
     const mmd = await readFile(join(root, 'flow', 'demo.mmd'), 'utf8');
     expect(mmd).toBe(MMD);
   });
+
+  it('exits when the host closes stdin', async () => {
+    // How an MCP host asks a stdio server to stop. Ignoring it leaves the client waiting
+    // out its shutdown timeout before killing the process, which reads as a slow stop.
+    const child = spawn(process.execPath, ['--import', 'tsx', 'src/cli/index.ts', 'mcp', root], {
+      cwd: process.cwd(),
+      stdio: ['pipe', 'pipe', 'ignore'],
+    });
+    const exited = new Promise<number | null>((resolve) => child.on('exit', resolve));
+    // The reply proves the transport is listening, so stdin is not closed before it is.
+    child.stdin.write(
+      `${JSON.stringify({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'initialize',
+        params: { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 'test', version: '1.0.0' } },
+      })}\n`,
+    );
+    await new Promise<void>((resolve) => child.stdout.once('data', () => resolve()));
+    child.stdin.end();
+    await expect(
+      Promise.race([
+        exited,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('still running')), 5_000)),
+      ]),
+    ).resolves.toBe(0);
+  }, 120_000);
 });

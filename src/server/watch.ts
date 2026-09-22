@@ -26,6 +26,12 @@ export function watchWorkspace(root: string, onChange: (ids: string[]) => void):
   const watcher = chokidarWatch(root, {
     ignoreInitial: true,
     ignored: (path) => /(^|[\\/])(node_modules|\.git|dist|build|coverage)([\\/]|$)/.test(path),
+    // A bind mount into a container - a Dev Container on macOS or Windows - delivers no
+    // file events at all, so the viewer would sit there never reloading. Polling costs
+    // CPU on a large workspace, so it is asked for rather than guessed at: chokidar reads
+    // CHOKIDAR_USEPOLLING itself and overrides anything set here, so passing it again
+    // would only turn off atomic-write normalization as a side effect.
+    interval: 300,
   });
 
   const queue = (path: string) => {
@@ -38,6 +44,14 @@ export function watchWorkspace(root: string, onChange: (ids: string[]) => void):
   };
 
   watcher.on('add', queue).on('change', queue).on('unlink', queue);
+
+  // An unreadable or unwatchable entry - a stale socket, a directory the user cannot open -
+  // is one file the viewer will not live-reload, not a reason to take the process down.
+  // Without a listener the EventEmitter rethrows, which kills the MCP server mid-session.
+  watcher.on('error', (error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error);
+    process.stderr.write(`mermaid-docs: watch error, continuing without it: ${message}\n`);
+  });
 
   return {
     async close() {
