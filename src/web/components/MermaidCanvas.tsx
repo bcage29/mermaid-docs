@@ -23,13 +23,20 @@ const HIGHLIGHT_TARGETS: Record<'flowchart' | 'sequence' | 'architecture', { lin
   architecture: { lines: '.architecture-edges path.edge', labels: '.architecture-edge-label' },
 };
 
+/** The edge a flowchart label belongs to. Mermaid puts the id on a node inside the label. */
+function labelEdgeId(label: Element): string | null {
+  return label.querySelector('[data-id]')?.getAttribute('data-id') ?? null;
+}
+
 /**
  * Emphasise the connections the current step draws, and fade the rest.
  *
- * Flowchart paths carry a `data-id` that survives re-layout, so they are matched by id.
- * Everything else is matched by position, which is the order Mermaid emits elements in -
- * note that an invisible `~~~` link produces an edge label but no path, so labels and
- * lines count separately.
+ * Flowchart paths carry a `data-id` that survives re-layout, so they are matched by id,
+ * and so are their labels - which is not only steadier than counting but the only thing
+ * that works across Mermaid versions. Mermaid 11 emits an `.edgeLabels` child for every
+ * edge, empty ones included; Mermaid 12 emits one only for edges that have a label, so
+ * any position is a different edge depending on the version. Diagram types whose edges
+ * carry no id are still matched by the order Mermaid emits them in.
  *
  * Classes are toggled rather than cleared and rewritten. Clearing first restarts the CSS
  * transition on everything, so a line that is muted before and after the step change
@@ -57,7 +64,8 @@ function applyHighlight(host: HTMLElement, highlight: Highlight): void {
     mark(el, dataId ? highlight.activeEdgeIds.has(dataId) : highlight.activeLines.has(i));
   });
   host.querySelectorAll(targets.labels).forEach((el, i) => {
-    mark(el, highlight.activeLabels.has(i));
+    const dataId = byId ? labelEdgeId(el) : null;
+    mark(el, dataId ? highlight.activeEdgeIds.has(dataId) : highlight.activeLabels.has(i));
   });
 }
 
@@ -76,6 +84,8 @@ function connectionAt(host: HTMLElement, clicked: Element, { connections, kind }
   const targets = HIGHLIGHT_TARGETS[kind];
   const label = clicked.closest(targets.labels);
   if (label) {
+    const dataId = kind === 'flowchart' ? labelEdgeId(label) : null;
+    if (dataId) return connections.find((c) => c.edgeId === dataId);
     const i = [...host.querySelectorAll(targets.labels)].indexOf(label);
     return connections.find((c) => c.slot === i);
   }
