@@ -137,8 +137,11 @@ test.describe('viewer', () => {
     await expect(page.locator('.mermaid-host path[data-id="L_Auth_Login_0"].is-active')).toHaveCount(1);
     await expect(page.locator('.mermaid-host path.flowchart-link.is-active')).toHaveCount(2);
     await expect(page.locator('.mermaid-host path.flowchart-link.is-muted')).toHaveCount(4);
-    // The "no" label belongs to the step; "yes" does not.
-    await expect(page.locator('.mermaid-host .edgeLabel.is-active')).toHaveCount(2);
+    // The "no" label belongs to the step; "yes" does not. Asserted by which edge each
+    // label is on rather than by how many there are: Mermaid 11 emits an empty label for
+    // every unlabelled edge and Mermaid 12 emits none, so the count is a version detail.
+    await expect(page.locator('.mermaid-host .edgeLabel.is-active', { hasText: 'no' })).toHaveCount(1);
+    await expect(page.locator('.mermaid-host .edgeLabel.is-muted', { hasText: 'yes' })).toHaveCount(1);
   });
 
   test('emphasis survives a zoom, which recreates the SVG subtree', async ({ page, baseURL }) => {
