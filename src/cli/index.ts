@@ -5,6 +5,7 @@ import { runValidate } from './commands/validate.js';
 import { runSetStep } from './commands/setStep.js';
 import { runDeleteStep } from './commands/deleteStep.js';
 import { runInit } from './commands/init.js';
+import { serverOptions } from './serverOptions.js';
 
 const USAGE = `mermaid-docs - view and document Mermaid diagrams
 
@@ -16,9 +17,9 @@ Usage:
   mermaid-docs set-step <diagram.mmd>       Create or update a step
   mermaid-docs delete-step <diagram.mmd>    Remove a step
 
-Serve options:
-  --port <n>       Port to listen on (default: a free one)
-  --no-open        Do not launch a browser
+Serve and mcp options:
+  --port <n>       Port to listen on (default: MERMAID_DOCS_PORT, else a free one)
+  --no-open        Do not launch a browser (serve only)
   --lan            Also listen on the local network, so another device can connect
   --host <addr>    Interface to bind (default: 127.0.0.1)
   --allow-host <h> Hostname the browser may use, for a proxy or tunnel in front (repeatable
@@ -82,7 +83,7 @@ async function main(): Promise<void> {
     case 'mcp': {
       // Imported lazily so the stdout guard installs before anything else can log.
       const { runMcp } = await import('../mcp/index.js');
-      return runMcp({ root: target });
+      return runMcp({ root: target, ...serverOptions(flags) });
     }
     case 'validate':
       return runValidate({ root: target });

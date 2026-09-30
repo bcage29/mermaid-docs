@@ -15,7 +15,8 @@ import { computeCoverage, validateDiagram } from '../core/validate.js';
 import { listConnections } from '../core/connections.js';
 import { parseRegions } from '../core/markers.js';
 import { buildHash, diagramName } from '../core/route.js';
-import { startServer } from '../server/http.js';
+import { isForwarded, startServer } from '../server/http.js';
+import { forwardingHint } from './forwardingHint.js';
 import { watchWorkspace } from '../server/watch.js';
 import {
   createDiagram,
@@ -27,6 +28,27 @@ import {
 
 export interface McpOptions {
   root: string;
+  /** 0 picks a free port. A fixed one is what a dev container can forward. */
+  port?: number;
+  host?: string;
+  allowedHosts?: string[];
+}
+
+/**
+ * Start the viewer, falling back to a free port if the requested one is taken.
+ *
+ * A fixed port is a convenience for forwarding, and a second agent session asking for the
+ * same one should not cost that session its MCP tools. get_viewer_url reports the port
+ * actually bound, so the links stay correct either way.
+ */
+async function startViewer(root: string, port: number, host: string, allowedHosts: string[]) {
+  try {
+    return await startServer(root, port, host, allowedHosts);
+  } catch (error) {
+    if (port === 0 || (error as NodeJS.ErrnoException).code !== 'EADDRINUSE') throw error;
+    process.stderr.write(`mermaid-docs viewer: port ${port} is in use, using a free one\n`);
+    return startServer(root, 0, host, allowedHosts);
+  }
 }
 
 /** Tools return human-readable text plus the structured payload. */
@@ -41,13 +63,20 @@ function fail(error: unknown) {
   return { content: [{ type: 'text' as const, text: mcpErrorMessage(error) }], isError: true };
 }
 
-export async function runMcp({ root }: McpOptions): Promise<void> {
+export async function runMcp({
+  root,
+  port = 0,
+  host = '127.0.0.1',
+  allowedHosts = [],
+}: McpOptions): Promise<void> {
   // The viewer shares this process so the agent and the browser watch one workspace.
-  const http = await startServer(root, 0);
+  const http = await startViewer(root, port, host, allowedHosts);
   const watcher = watchWorkspace(root, (ids) => {
     for (const id of ids) http.broadcast('changed', { name: diagramName(id) });
   });
   process.stderr.write(`mermaid-docs viewer: ${http.url}\n`);
+  const hint = forwardingHint(port, http.port, isForwarded());
+  if (hint) process.stderr.write(`${hint}\n`);
 
   const server = new McpServer(
     { name: 'mermaid-docs', version: '0.1.0' },
@@ -309,7 +338,7 @@ export async function runMcp({ root }: McpOptions): Promise<void> {
     },
     async ({ id, stepId }) => {
       const url = id ? `${http.url}/${buildHash(diagramName(id), stepId)}` : http.url;
-      return result(url, { url });
+      return result(hint ? `${url}\n\n${hint}` : url, { url });
     },
   );
 

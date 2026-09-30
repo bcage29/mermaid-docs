@@ -2,6 +2,7 @@ import { describe, expect, it, beforeAll, afterAll } from 'vitest';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { spawn } from 'node:child_process';
+import { createServer, type Server } from 'node:http';
 import { mkdtemp, mkdir, readFile, symlink, writeFile } from 'node:fs/promises';
 import { rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -25,6 +26,9 @@ beforeAll(async () => {
       command: process.execPath,
       args: ['--import', 'tsx', 'src/cli/index.ts', 'mcp', root],
       cwd: process.cwd(),
+      // Pinned so the suite reads the same inside a dev container, where get_viewer_url
+      // would otherwise add port-forwarding advice.
+      env: { ...process.env, MERMAID_DOCS_FORWARDED: '0' } as Record<string, string>,
       stderr: 'pipe',
     }),
   );
@@ -264,5 +268,62 @@ describe('mcp server', () => {
         new Promise((_, reject) => setTimeout(() => reject(new Error('still running')), 5_000)),
       ]),
     ).resolves.toBe(0);
+  }, 120_000);
+});
+
+describe('mcp viewer port', () => {
+  async function viewer(args: string[], forwarded = '0'): Promise<{ url: URL; text: string }> {
+    const portClient = new Client({ name: 'test', version: '1.0.0' });
+    await portClient.connect(
+      new StdioClientTransport({
+        command: process.execPath,
+        args: ['--import', 'tsx', 'src/cli/index.ts', 'mcp', root, ...args],
+        cwd: process.cwd(),
+        env: { ...process.env, MERMAID_DOCS_FORWARDED: forwarded } as Record<string, string>,
+        stderr: 'pipe',
+      }),
+    );
+    try {
+      const result = await portClient.callTool({ name: 'get_viewer_url', arguments: {} });
+      const { url } = result.structuredContent as { url: string };
+      return { url: new URL(url), text: (result.content as Array<{ text: string }>)[0]!.text };
+    } finally {
+      await portClient.close();
+    }
+  }
+
+  function listen(): Promise<{ server: Server; port: number }> {
+    const server = createServer();
+    return new Promise((resolve) =>
+      server.listen(0, '127.0.0.1', () => {
+        const address = server.address();
+        resolve({ server, port: typeof address === 'object' && address ? address.port : 0 });
+      }),
+    );
+  }
+
+  it('binds the port it is given, so a dev container can forward it', async () => {
+    // Borrow a free port, then release it for the server to take.
+    const { server, port } = await listen();
+    await new Promise((resolve) => server.close(resolve));
+    expect((await viewer(['--port', String(port)])).url.port).toBe(String(port));
+  }, 120_000);
+
+  it('falls back to a free port when the one it is given is taken', async () => {
+    const { server, port } = await listen();
+    try {
+      const { url } = await viewer(['--port', String(port)]);
+      expect(url.port).not.toBe(String(port));
+      expect(Number(url.port)).toBeGreaterThan(0);
+    } finally {
+      await new Promise((resolve) => server.close(resolve));
+    }
+  }, 120_000);
+
+  it('tells someone in a container how to forward the viewer', async () => {
+    const { url, text } = await viewer([], '1');
+    expect(text.startsWith(`${url.origin}\n\n`)).toBe(true);
+    expect(text).toContain(`forward port ${url.port} from the Ports panel`);
+    expect(text).toContain('"forwardPorts": [4747]');
   }, 120_000);
 });
