@@ -8,7 +8,7 @@ check that every arrow is covered, and link you straight to the right step in th
 
 ```bash
 claude mcp add --scope project --transport stdio mermaid-docs -- \
-  npx -y mermaid-docs mcp ./docs
+  npx -y mermaid-docs mcp ./docs --port 4747
 ```
 
 Start Claude Code, approve the project server, and check it with `/mcp`.
@@ -23,7 +23,7 @@ Create `.vscode/mcp.json`:
     "mermaid-docs": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "mermaid-docs", "mcp", "${workspaceFolder}/docs"]
+      "args": ["-y", "mermaid-docs", "mcp", "${workspaceFolder}/docs", "--port", "4747"]
     }
   }
 }
@@ -40,11 +40,32 @@ Most other clients use the `mcpServers` key:
   "mcpServers": {
     "mermaid-docs": {
       "command": "npx",
-      "args": ["-y", "mermaid-docs", "mcp", "./docs"]
+      "args": ["-y", "mermaid-docs", "mcp", "./docs", "--port", "4747"]
     }
   }
 }
 ```
+
+`--port` keeps the viewer at `http://127.0.0.1:4747`, so an open tab survives the server
+restarting. Leave it out and a free port is picked on every start. If 4747 is taken, for
+example by a second agent session, the server falls back to a free one rather than failing.
+
+## Dev containers and Codespaces
+
+The viewer runs inside the container, and your browser does not. VS Code forwards the
+ports a terminal prints, but an MCP server is started by the agent, so its output never
+reaches a terminal. With the port pinned as above, forward it:
+
+```jsonc
+// .devcontainer/devcontainer.json
+"forwardPorts": [4747]
+```
+
+Rebuild the container after changing `devcontainer.json`. `MERMAID_DOCS_PORT=4747` works
+in place of `--port` if your client makes environment variables easier to set.
+
+Inside a container, `get_viewer_url` adds these instructions to the link it returns
+whenever the port may not be forwarded, so the agent can pass them on.
 
 ## Then ask
 

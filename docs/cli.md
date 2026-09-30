@@ -21,6 +21,9 @@ the container and reaches the viewer on whatever port the forwarder chose, and
 forwarding domain is trusted the same way. Set `MERMAID_DOCS_FORWARDED=1` (or `0`) if a
 setup is misread.
 
+The MCP server needs its port pinned to be forwarded; see
+[Dev containers and Codespaces](mcp.md#dev-containers-and-codespaces).
+
 Any other proxy or tunnel in front of the viewer has to be named, or its requests are
 refused as if they came from an attacker:
 

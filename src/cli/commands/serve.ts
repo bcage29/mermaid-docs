@@ -2,6 +2,7 @@ import { startServer } from '../../server/http.js';
 import { watchWorkspace } from '../../server/watch.js';
 import { isDirectory } from '../../server/workspace.js';
 import { diagramName } from '../../core/route.js';
+import { serverOptions } from '../serverOptions.js';
 
 export interface ServeOptions {
   root: string;
@@ -36,16 +37,8 @@ export async function runServe({ root, flags }: ServeOptions): Promise<void> {
     throw new Error(`Not a directory: ${root}`);
   }
 
-  const port = typeof flags.port === 'string' ? Number(flags.port) : 0;
-  // --host 0.0.0.0 (or --lan) exposes the viewer to the local network. There is no
-  // authentication, so this is opt-in and announced.
-  const host =
-    typeof flags.host === 'string' ? flags.host : flags.lan === true ? '0.0.0.0' : '127.0.0.1';
-  const allowedHosts =
-    typeof flags['allow-host'] === 'string'
-      ? flags['allow-host'].split(',').map((entry) => entry.trim())
-      : [];
-  const handle = await startServer(root, Number.isFinite(port) ? port : 0, host, allowedHosts);
+  const { port, host, allowedHosts } = serverOptions(flags);
+  const handle = await startServer(root, port, host, allowedHosts);
   const watcher = watchWorkspace(root, (ids) => {
     for (const id of ids) handle.broadcast('changed', { name: diagramName(id) });
   });
