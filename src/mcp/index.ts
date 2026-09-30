@@ -196,7 +196,9 @@ export async function runMcp({
       title: 'Create diagram',
       description: 'Create a new .mmd diagram and its documentation file. Refuses to overwrite either existing file.',
       inputSchema: {
-        path: z.string().describe('Path for the new .mmd, relative to the workspace root'),
+        path: z.string().describe(
+          'Path for the new .mmd, relative to the workspace root, at most one folder deep',
+        ),
         mmd: z.string().describe('Mermaid diagram source'),
         title: z.string().optional().describe('Title for the documentation frontmatter'),
       },
