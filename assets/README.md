@@ -10,11 +10,29 @@ the code references them, so don't clear them out as unused.
 
 | File | Where it appears |
 | --- | --- |
-| `walkthrough.gif` | the hero — stepping through `examples/sequence/messaging.mmd` |
+| `walkthrough.gif` | the hero — stepping through `examples/architecture/agentic-rag.mmd` in light mode |
 | `viewer.png` | the still under "What works where" |
 
-Both come from the viewer running against `examples/` in its dark default. Recapture them
-there rather than editing the images.
+Both come from the viewer running against `examples/`. Recapture them there rather than
+editing the images.
+
+`walkthrough.gif` is recorded by [`scripts/record-gif.mjs`](../scripts/record-gif.mjs):
+it starts the built viewer, steps through the diagram with the keyboard, opens the source
+panel for the last two steps, and assembles the screenshots with ffmpeg. It needs a build,
+Playwright's Chromium, and ffmpeg. The Playwright image has everything except ffmpeg, and
+keeps the container's `node_modules` and `dist` apart from the host's:
+
+```bash
+docker run --rm -v "$PWD":/work -v /work/node_modules -v /work/dist -w /work \
+  mcr.microsoft.com/playwright:v1.63.0-noble bash -c \
+  'apt-get update -qq && apt-get install -y -qq ffmpeg >/dev/null &&
+   npm ci && npm run build && npm run record:gif'
+```
+
+Match the image tag to the installed `@playwright/test` version. Set `KEEP_FRAMES=1` to
+keep the screenshots for checking a recording frame by frame.
+
+`viewer.png` is captured by hand, in the dark default.
 
 ## Icon
 

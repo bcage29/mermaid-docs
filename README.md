@@ -18,7 +18,7 @@ npx mermaid-docs ./docs
 ```
 
 <p align="center">
-  <img src="assets/walkthrough.gif" alt="Stepping through a sign-in flow: each step highlights the messages it explains and frames them, then the source panel opens and follows along, highlighting the lines that draw them" width="100%">
+  <img src="assets/walkthrough.gif" alt="Stepping through an agentic RAG architecture: each step highlights the connections it explains and frames them, then the source panel opens and follows along, highlighting the lines that draw them" width="100%">
 </p>
 
 <p align="center">
