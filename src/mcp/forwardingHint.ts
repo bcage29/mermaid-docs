@@ -1,6 +1,3 @@
-/** The port the setup snippet suggests pinning, when none was asked for. */
-const SUGGESTED_PORT = 4747;
-
 /**
  * What someone in a dev container or Codespace has to do to open the viewer, if anything.
  *
@@ -19,23 +16,16 @@ export function forwardingHint(
 ): string | undefined {
   if (!forwarded) return undefined;
   if (requestedPort !== 0 && requestedPort === boundPort) {
-    return (
-      `Running in a container: the viewer is on port ${boundPort}. If the link does not open, ` +
-      `add ${boundPort} to "forwardPorts" in .devcontainer/devcontainer.json and rebuild the ` +
-      'container, or forward it from the Ports panel.'
-    );
+    return `Detected a container environment; viewer is on port ${boundPort}. If needed, forward it manually.`;
   }
-  const port = requestedPort || SUGGESTED_PORT;
-  const cause =
-    requestedPort === 0
-      ? `port ${boundPort} was picked at random and changes on every start`
-      : `port ${requestedPort} was in use, so it fell back to port ${boundPort}`;
+  if (requestedPort === 0) {
+    return [
+      `Detected a container environment; port ${boundPort} may not be automatically forwarded. Forward it if needed.`,
+      'Pass --port <port> to request a fixed port on each start.',
+    ].join('\n');
+  }
   return [
-    `Running in a container: ${cause}, so it may not be forwarded to your machine.`,
-    `To open it now, forward port ${boundPort} from the Ports panel.`,
-    `To fix it for good, pin the port${requestedPort === 0 ? '' : ' (a free one)'} in the MCP server config:`,
-    `  "args": ["-y", "mermaid-docs", "mcp", "./docs", "--port", "${port}"]`,
-    'and forward it in .devcontainer/devcontainer.json, then rebuild the container:',
-    `  "forwardPorts": [${port}]`,
+    `Detected a container environment; port ${requestedPort} is busy, so using ${boundPort}. Forward it if needed.`,
+    'Pass --port <free-port> to request a fixed port on each start.',
   ].join('\n');
 }

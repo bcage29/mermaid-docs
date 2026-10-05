@@ -369,7 +369,8 @@ describe('mcp viewer port', () => {
   it('tells someone in a container how to forward the viewer', async () => {
     const { url, text } = await viewer([], '1');
     expect(text.startsWith(`${url.origin}\n\n`)).toBe(true);
-    expect(text).toContain(`forward port ${url.port} from the Ports panel`);
-    expect(text).toContain('"forwardPorts": [4747]');
+    expect(text).toContain(`Detected a container environment; port ${url.port} may not be automatically forwarded.`);
+    expect(text).toContain('Forward it if needed.\nPass --port <port> to request a fixed port on each start.');
+    expect(text.split('\n')).toHaveLength(4);
   }, 120_000);
 });
