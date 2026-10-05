@@ -7,6 +7,9 @@ constraints before you spend time on it.
 
 ## Reporting issues
 
+Report security problems privately, as described in [SECURITY.md](SECURITY.md), and not
+in a public issue.
+
 For a bug, include the diagram that triggers it and the steps to reproduce. A `.mmd` and
 `.md` pair that shows the problem is worth more than a description of it.
 
@@ -44,6 +47,23 @@ the command from.
 
 CI runs `typecheck`, `build`, and `test` on Node 20, 22, and 24, plus the Playwright
 suite on Node 22. Please make sure those pass locally before opening a pull request.
+
+### Dependency audit
+
+CI also runs `npm audit`. It fails on any advisory rated high or critical in a runtime
+dependency (`npm audit --omit=dev --audit-level=high`), since those reach users' installs.
+Advisories in dev dependencies are reported as a warning without failing the build,
+because they affect only our own tooling. `npm audit signatures` checks the registry
+signatures of everything installed.
+
+When a gating advisory has no fix:
+
+1. If a patched version of the affected transitive package exists, force it with
+   `overrides` in `package.json` and note the advisory in the commit message.
+2. If none exists, open an issue that records the advisory, whether mermaid-docs can
+   reach the vulnerable code, and what is being waited on upstream. A maintainer may
+   merge past the failing check while that issue is open. Close it, and remove any
+   override, once upstream ships a fix.
 
 ## Pull requests
 

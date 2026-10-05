@@ -16,6 +16,8 @@
 * MCP tools carry annotations: the read tools are marked read-only, and `set_step` and `delete_step` are marked destructive, so a host can ask before running them.
 * `--allow-host` prints a reminder on stderr that the tunnel or proxy in front of the viewer must require sign-in.
 * GitHub Actions in CI and release workflows are pinned to commit SHAs.
+* CI runs `npm audit`, failing on high or critical advisories in runtime dependencies and verifying registry signatures. Dev dependency advisories are reported without failing.
+* `SECURITY.md` describes how to report a vulnerability privately.
 
 ### Fixed
 

@@ -70,11 +70,33 @@ jobs:
       - name: Verify published tarball contents
         run: npm pack --dry-run
 
+  # Runtime dependencies reach users' installs, so their advisories gate the build.
+  # Dev dependencies only affect our tooling and are reported without failing.
+  # See "Dependency audit" in CONTRIBUTING.md for advisories that have no fix.
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Audit runtime dependencies
+        run: npm audit --omit=dev --audit-level=high
+      - name: Report dev dependency advisories
+        run: npm audit || echo "::warning title=npm audit::Dev dependency advisories found; see the log above."
+      - name: Verify registry signatures
+        run: npm audit signatures
+
   # Single stable check name for branch protection, so changing the test
   # matrix never leaves required checks stuck pending.
   ci:
     if: always()
-    needs: [test, e2e, package]
+    needs: [test, e2e, package, audit]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
