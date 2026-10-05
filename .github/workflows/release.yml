@@ -1,4 +1,6 @@
 name: Release
+# Without this, a run is named after the tagged commit's message.
+run-name: Release ${{ github.ref_name }}
 
 on:
   push:
