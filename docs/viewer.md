@@ -29,6 +29,7 @@ emphasised.
   workspace against concurrent changes by untrusted local processes.
 - The viewer is read-only. Edit through your editor, the [CLI](cli.md), or the
   [MCP tools](mcp.md).
-- The server binds to `127.0.0.1`. `--lan` has no authentication — use it only on a
-  network you trust.
+- The server only binds loopback and has no authentication. Reach it from elsewhere through
+  VS Code's port forwarding or a tunnel named with `--allow-host`; see
+  [In a container](cli.md#in-a-container).
 - Requires Node.js 20 or newer.
