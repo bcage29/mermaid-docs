@@ -69,9 +69,55 @@ describe('mcp server', () => {
     ]);
   });
 
+  it('annotates which tools read, which write, and which replace or remove content', async () => {
+    const annotations = Object.fromEntries(
+      (await client.listTools()).tools.map((t) => [t.name, t.annotations]),
+    );
+    for (const name of ['list_diagrams', 'get_diagram', 'list_connections', 'validate_diagram', 'get_viewer_url']) {
+      expect(annotations[name]).toMatchObject({ readOnlyHint: true, openWorldHint: false });
+    }
+    for (const name of ['create_diagram', 'reorder_steps']) {
+      expect(annotations[name]).toMatchObject({ readOnlyHint: false, destructiveHint: false, openWorldHint: false });
+    }
+    for (const name of ['set_step', 'delete_step']) {
+      expect(annotations[name]).toMatchObject({ readOnlyHint: false, destructiveHint: true, openWorldHint: false });
+    }
+  });
+
+  it.each(['notes.md', 'notes.txt', '.env', 'package.json', 'flow/demo.mmd.bak'])(
+    'refuses to write anything but a .mmd and its sibling .md: %s',
+    async (path) => {
+      const created = await client.callTool({ name: 'create_diagram', arguments: { path, mmd: MMD } });
+      expect(created.isError).toBe(true);
+      expect(JSON.stringify(created)).toContain('.mmd file');
+      await expect(readFile(join(root, path))).rejects.toMatchObject({ code: 'ENOENT' });
+
+      const updated = await client.callTool({
+        name: 'set_step',
+        arguments: { id: path, stepId: 'begin', startLine: 2, endLine: 2 },
+      });
+      expect(updated.isError).toBe(true);
+      expect(JSON.stringify(updated)).toContain('.mmd file');
+    },
+  );
+
   it('lists diagrams found under the root', async () => {
     const res = await client.callTool({ name: 'list_diagrams', arguments: {} });
     expect((res.content as Array<{ text: string }>)[0]!.text).toContain('flow/demo.mmd');
+  });
+
+  it('labels workspace content as untrusted, in the text and the structured result', async () => {
+    expect(client.getInstructions()).toContain('UNTRUSTED CONTENT');
+    for (const [name, args] of [
+      ['list_diagrams', {}],
+      ['get_diagram', { id: 'flow/demo.mmd' }],
+      ['list_connections', { id: 'flow/demo.mmd' }],
+      ['validate_diagram', { id: 'flow/demo.mmd' }],
+    ] as const) {
+      const res = await client.callTool({ name, arguments: args });
+      expect((res.content as Array<{ text: string }>)[0]!.text).toMatch(/^Untrusted repository content follows\./);
+      expect(res.structuredContent).toMatchObject({ contentTrust: 'untrusted-repository-content' });
+    }
   });
 
   it('writes a step into both files and keeps them in sync', async () => {
