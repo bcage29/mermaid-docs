@@ -10,11 +10,11 @@ the code references them, so don't clear them out as unused.
 
 | File | Where it appears |
 | --- | --- |
-| `walkthrough.gif` | the hero — stepping through `examples/sequence/messaging.mmd` |
+| `walkthrough.gif` | the hero — stepping through `examples/architecture/agentic-rag.mmd` in light mode |
 | `viewer.png` | the still under "What works where" |
 
-Both come from the viewer running against `examples/` in its dark default. Recapture them
-there rather than editing the images.
+Both come from the viewer running against `examples/`. Recapture them there rather than
+editing the images.
 
 ## Icon
 
