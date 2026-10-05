@@ -20,8 +20,7 @@ Usage:
 Serve and mcp options:
   --port <n>       Port to listen on (default: MERMAID_DOCS_PORT, else a free one)
   --no-open        Do not launch a browser (serve only)
-  --lan            Also listen on the local network, so another device can connect
-  --host <addr>    Interface to bind (default: 127.0.0.1)
+  --host <addr>    Loopback interface to bind: 127.0.0.1 (default), ::1 or localhost
   --allow-host <h> Hostname the browser may use, for a proxy or tunnel in front (repeatable
                    as a comma-separated list)
 

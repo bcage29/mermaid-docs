@@ -28,6 +28,25 @@ function toId(root: string, absPath: string): string {
   return relative(root, absPath).split(sep).join('/');
 }
 
+/** Whether the scan descends into a directory of this name. */
+function isScannableDir(name: string): boolean {
+  return !SKIP_DIRS.has(name) && !name.startsWith('.');
+}
+
+/**
+ * Reject a path the scan would never reach. A diagram the scan misses is invisible to
+ * `list_diagrams` and the viewer, so writing one there would report a success that
+ * nothing can see.
+ */
+function assertScannable(relPath: string): void {
+  const dirs = relPath.split('/').slice(0, -1);
+  if (dirs.length > 1 || !dirs.every(isScannableDir)) {
+    throw new UserInputError(
+      `Diagrams live at most one folder deep, outside dot and build folders: ${relPath}`,
+    );
+  }
+}
+
 /**
  * Find every .mmd file in the root and one level below it.
  *
@@ -48,7 +67,7 @@ export async function scanDiagrams(root: string): Promise<DiagramRef[]> {
     for (const entry of entries) {
       const abs = join(dir, entry.name);
       if (entry.isDirectory()) {
-        if (depth === 0 && !SKIP_DIRS.has(entry.name) && !entry.name.startsWith('.')) {
+        if (depth === 0 && isScannableDir(entry.name)) {
           await walk(abs, depth + 1);
         }
         continue;
@@ -115,6 +134,7 @@ export function resolveDiagramPath(root: string, id: string): string {
   if (!/\.mmd$/i.test(abs)) throw new UserInputError('Diagram id must name a .mmd file.');
   assertNoSymlinks(root, abs);
   assertNoSymlinks(root, docPathFor(abs));
+  assertScannable(toId(root, abs));
   return abs;
 }
 

@@ -92,3 +92,15 @@ Plus a `document-diagram` prompt that walks a whole diagram end to end.
 
 Prefer `set_step` over editing files directly: inserting a marker shifts every line below
 it, so writing several steps by hand tends to corrupt the ranges.
+
+Results that carry diagram source or documentation are marked as untrusted repository
+content, and the server's instructions tell the agent not to follow instructions found in
+it. That lowers the risk of a prompt injection planted in a diagram, but cannot remove it:
+whether the label is honoured is up to the agent. Review diagrams from people you do not
+trust before pointing an agent at them.
+
+The tools themselves can only change `.mmd` files and their sibling `.md` files under the
+workspace root, and they are annotated so a host can tell the read-only tools from
+`set_step` and `delete_step`, which replace or remove existing content. An injected
+instruction can also try the other tools your agent host offers, such as a shell or file
+edits. `mermaid-docs` cannot limit those: keep the host's approval prompts on for them.

@@ -17,6 +17,12 @@ describe('exclusive diagram creation', () => {
     expect(await readFile(join(root, 'nested/demo.md'), 'utf8')).toBe(files.md);
   });
 
+  it('refuses a directory the scan would never reach, leaving nothing behind', async () => {
+    await expect(createDiagram(root, 'nested/deeper/demo.mmd', files))
+      .rejects.toThrow('at most one folder deep');
+    await expect(readFile(join(root, 'nested/deeper/demo.mmd'))).rejects.toMatchObject({ code: 'ENOENT' });
+  });
+
   it.each(['demo.mmd', 'demo.md'])('preserves an existing %s and leaves no partial sibling', async (filename) => {
     await writeFile(join(root, filename), 'Original');
     await expect(createDiagram(root, 'demo.mmd', files)).rejects.toThrow('already exists');

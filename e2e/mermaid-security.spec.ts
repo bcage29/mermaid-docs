@@ -24,3 +24,22 @@ for (const [name, prefix] of [
     await expect(page.locator('body')).not.toHaveAttribute('data-diagram-script', 'executed');
   });
 }
+
+// A violation can block something without breaking a visible feature, so count them.
+test('renders every example under the content security policy without a violation', async ({ page, baseURL }) => {
+  await page.addInitScript(() => {
+    (window as unknown as { cspViolations: string[] }).cspViolations = [];
+    document.addEventListener('securitypolicyviolation', (event) => {
+      (window as unknown as { cspViolations: string[] }).cspViolations.push(
+        `${event.violatedDirective} ${event.blockedURI}`,
+      );
+    });
+  });
+  const response = await page.goto(`${baseURL}/`);
+  expect(response?.headers()['content-security-policy']).toContain("script-src 'self'");
+  for (const name of ['agentic-rag', 'auth-flow', 'messaging']) {
+    await page.goto(`${baseURL}/#/${name}`);
+    await expect(page.locator('.mermaid-host svg')).toBeVisible();
+  }
+  expect(await page.evaluate(() => (window as unknown as { cspViolations: string[] }).cspViolations)).toEqual([]);
+});

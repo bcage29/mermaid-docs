@@ -44,11 +44,6 @@ export async function runServe({ root, flags }: ServeOptions): Promise<void> {
   });
 
   process.stdout.write(`mermaid-docs serving ${root}\n${handle.url}\n`);
-  if (handle.host !== '127.0.0.1' && handle.host !== 'localhost') {
-    process.stdout.write(
-      `Reachable by anyone on this network. It serves every .mmd and .md under ${root}.\n`,
-    );
-  }
   if (flags.open !== false && flags['no-open'] !== true) await openBrowser(handle.url);
 
   const shutdown = async () => {

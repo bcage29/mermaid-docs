@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { loadDiagram, readDiagramFiles, resolveDiagramPath, writeDiagram } from '../src/server/workspace.js';
+import { loadDiagram, readDiagramFiles, resolveDiagramPath, scanDiagrams, writeDiagram } from '../src/server/workspace.js';
 
 const MMD = 'flowchart TD\n  Start --> End';
 let temp: string;
@@ -85,5 +85,22 @@ describe('workspace path containment', () => {
     expect(resolveDiagramPath(root, 'new/nested.mmd')).toBe(join(root, 'new/nested.mmd'));
     expect(() => resolveDiagramPath(root, '../outside/demo.mmd')).toThrow('outside the workspace');
     expect(() => resolveDiagramPath(root, '../workspace-other/demo.mmd')).toThrow('outside the workspace');
+  });
+
+  it.each(['deep/er/demo.mmd', '.github/demo.mmd', 'dist/demo.mmd'])(
+    'refuses %s, which the scan would never find',
+    (id) => {
+      expect(() => resolveDiagramPath(root, id)).toThrow('at most one folder deep');
+    },
+  );
+
+  it('resolves every id the scan returns', async () => {
+    for (const dir of ['group', 'deep/er', '.github', 'dist']) {
+      await mkdir(join(root, dir), { recursive: true });
+      await writeFile(join(root, dir, 'x.mmd'), MMD);
+    }
+    const ids = (await scanDiagrams(root)).map((ref) => ref.id);
+    expect(ids).toEqual(['demo.mmd', 'group/x.mmd']);
+    for (const id of ids) expect(resolveDiagramPath(root, id)).toBe(join(root, id));
   });
 });

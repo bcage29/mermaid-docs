@@ -2,7 +2,6 @@
 
 ```bash
 mermaid-docs <folder>                  # Open the viewer
-mermaid-docs <folder> --lan            # Also serve on the local network
 mermaid-docs mcp <folder>              # Start the MCP server and the viewer
 mermaid-docs validate <folder>         # Validate every diagram
 mermaid-docs init <diagram.mmd>        # Create its Markdown file
@@ -30,6 +29,21 @@ refused as if they came from an attacker:
 ```bash
 mermaid-docs ./docs --allow-host viewer.internal
 ```
+
+The viewer has no authentication, so it only listens on loopback: `--host` accepts
+`127.0.0.1` (the default), `::1`, or `localhost`, and nothing else. That is enough for VS
+Code's port forwarding, which connects from inside the container. A plain
+`docker run -p` is not: it connects to the container's network interface, which a loopback
+listener never answers, so run the container through VS Code instead. To open the viewer
+from another machine, put a tunnel in front of it and name the tunnel with `--allow-host`.
+
+> [!WARNING]
+> Anyone who can reach the viewer can read every diagram and document in the workspace.
+> A tunnel named with `--allow-host` must require sign-in itself; never use one that hands
+> out a public, unauthenticated URL. In Codespaces, keep the viewer's port **Private**,
+> which is the default; changing its visibility to Public or to your organization shares
+> the workspace with everyone it covers. `mermaid-docs` prints a reminder on stderr
+> whenever `--allow-host` is set.
 
 A browser cannot be launched from inside a container, so `mermaid-docs` uses the `BROWSER`
 helper VS Code provides and opens the page on your machine. Without one it prints the URL
