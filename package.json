@@ -26,7 +26,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "npm-shrinkwrap.json"
   ],
   "publishConfig": {
     "access": "public"
