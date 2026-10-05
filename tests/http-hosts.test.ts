@@ -1,6 +1,6 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createServer, request } from 'node:http';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createApi, startServer, type ServerHandle } from '../src/server/http.js';
@@ -68,13 +68,46 @@ describe('viewer request boundaries', () => {
     })).status).toBe(403);
   });
 
-  it('preserves direct access when bound to all IPv4 interfaces', async () => {
-    await viewer.close();
-    viewer = await startServer(root, 0, '0.0.0.0');
-    const url = `http://127.0.0.1:${viewer.port}/api/diagrams`;
-    expect((await get(url)).status).toBe(200);
-    expect((await get(url, { host: `attacker.example:${viewer.port}` })).status).toBe(403);
+  it.each(['0.0.0.0', '::', '192.168.1.10', 'example.com'])(
+    'refuses to bind %s, even behind a port forwarder',
+    async (host) => {
+      process.env.MERMAID_DOCS_FORWARDED = '1';
+      await expect(startServer(root, 0, host)).rejects.toThrow(
+        /loopback address.*VS Code.*--allow-host/,
+      );
+    },
+  );
+
+  it.each(['/', '/api/workspace'])('sends hardening headers on %s, including on a refusal', async (path) => {
+    for (const host of [`localhost:${viewer.port}`, `attacker.example:${viewer.port}`]) {
+      const headers = await new Promise<Record<string, unknown>>((resolve, reject) => {
+        request(`${viewer.url}${path}`, { headers: { host } }, (res) => {
+          res.resume();
+          resolve(res.headers);
+        }).on('error', reject).end();
+      });
+      expect(headers).toMatchObject({
+        'x-content-type-options': 'nosniff',
+        'content-security-policy': "script-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
+        'referrer-policy': 'no-referrer',
+      });
+    }
   });
+
+  it.skipIf(process.platform === 'win32' || process.getuid?.() === 0)(
+    'answers an unreadable diagram with a generic message and no local path',
+    async () => {
+      await chmod(join(root, 'demo.mmd'), 0o000);
+      try {
+        const response = await get(`${viewer.url}/api/diagrams/demo`);
+        expect(response.status).toBe(404);
+        expect(response.body).toBe('{"error":"Could not read diagram \\"demo\\"."}');
+        expect(response.body).not.toContain(root);
+      } finally {
+        await chmod(join(root, 'demo.mmd'), 0o644);
+      }
+    },
+  );
 
   it('also protects the shared API when mounted as middleware', async () => {
     const api = createApi(root);
@@ -145,5 +178,18 @@ describe('behind a port forwarder', () => {
   it('ignores a port written into an --allow-host value rather than never matching', async () => {
     await restart(['viewer.internal:9443']);
     expect((await get(`${viewer.url}/api/workspace`, { host: 'viewer.internal:9443' })).status).toBe(200);
+  });
+
+  it('reminds on stderr, never stdout, that a named tunnel must authenticate', async () => {
+    const stderr = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    const stdout = vi.spyOn(process.stdout, 'write');
+    try {
+      await restart(['viewer.internal']);
+      expect(stderr.mock.calls.join('')).toMatch(/viewer\.internal.*must require sign-in/s);
+      expect(stdout).not.toHaveBeenCalled();
+    } finally {
+      stderr.mockRestore();
+      stdout.mockRestore();
+    }
   });
 });

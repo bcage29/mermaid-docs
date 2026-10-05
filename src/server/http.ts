@@ -3,18 +3,9 @@ import { readFile, stat } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { basename, extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { networkInterfaces } from 'node:os';
+import { inspect } from 'node:util';
+import { UserInputError } from '../core/errors.js';
 import { loadDiagram, scanDiagrams } from './workspace.js';
-
-/** First non-internal IPv4 address, for printing a URL other devices can open. */
-function lanAddress(): string {
-  for (const addresses of Object.values(networkInterfaces())) {
-    for (const address of addresses ?? []) {
-      if (address.family === 'IPv4' && !address.internal) return address.address;
-    }
-  }
-  return 'localhost';
-}
 
 /**
  * Whether something is expected to forward a port to this process.
@@ -70,9 +61,7 @@ interface AccessPolicy {
  */
 function accessPolicy(configuredHost?: string, allowedHosts: readonly string[] = []): AccessPolicy {
   const direct = new Set(['localhost', '127.0.0.1', '[::1]']);
-  if (configuredHost && configuredHost !== '0.0.0.0' && configuredHost !== '::') {
-    direct.add(hostname(configuredHost));
-  }
+  if (configuredHost) direct.add(hostname(configuredHost));
   const proxied = new Set<string>();
   const codespaces = process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN;
   if (codespaces) proxied.add(`.${hostname(codespaces)}`);
@@ -134,6 +123,34 @@ function sendJson(res: ServerResponse, status: number, body: unknown): void {
   res.end(payload);
 }
 
+/**
+ * The message a client may see. Only a `UserInputError` is about the request itself;
+ * anything else can carry a local path, so it goes to stderr - never stdout, which the
+ * MCP server reserves for JSON-RPC.
+ */
+function clientMessage(error: unknown, fallback: string): string {
+  if (error instanceof UserInputError) return error.message;
+  process.stderr.write(`mermaid-docs viewer: ${inspect(error)}\n`);
+  return fallback;
+}
+
+const SECURITY_HEADERS: Record<string, string> = {
+  'x-content-type-options': 'nosniff',
+  'content-security-policy': "script-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
+  'referrer-policy': 'no-referrer',
+};
+
+const LOOPBACK = new Set(['127.0.0.1', '[::1]', 'localhost']);
+
+/** The server has no authentication, so nothing beyond this machine may reach it directly. */
+function assertLoopback(host: string): void {
+  if (LOOPBACK.has(hostname(host))) return;
+  throw new UserInputError(
+    `--host must be a loopback address (127.0.0.1, ::1 or localhost), not ${host}. ` +
+      'To open the viewer from elsewhere, forward the port with VS Code, or put a tunnel in front and name it with --allow-host.',
+  );
+}
+
 function requestIsAllowed(req: IncomingMessage, policy: AccessPolicy): boolean {
   const authority = req.headers.host;
   if (!authority || /[\s/@?#\\]/.test(authority)) return false;
@@ -163,16 +180,6 @@ function requestIsAllowed(req: IncomingMessage, policy: AccessPolicy): boolean {
   }
 }
 
-/**
- * Start the viewer HTTP server.
- *
- * Binds to loopback on an ephemeral port by default. Nothing here writes to stdout, so
- * the same process can also speak MCP over stdio.
- *
- * `host` may be widened to reach the viewer from another device on the network. The
- * server has no authentication and serves everything under `root`, so that is strictly
- * opt-in.
- */
 export interface Api {
   /** Handles the `/api` routes, reporting whether the request was one of them. */
   handle(req: IncomingMessage, res: ServerResponse): Promise<boolean>;
@@ -248,8 +255,9 @@ export function createApi(
       try {
         sendJson(res, 200, await loadDiagram(root, ref.id));
       } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        sendJson(res, message.includes('outside the workspace') ? 403 : 404, { error: message });
+        sendJson(res, error instanceof UserInputError ? 403 : 404, {
+          error: clientMessage(error, `Could not read diagram "${name}".`),
+        });
       }
       return true;
     }
@@ -314,9 +322,9 @@ async function serveStatic(path: string, res: ServerResponse): Promise<void> {
  * Binds to loopback on an ephemeral port by default. Nothing here writes to stdout, so
  * the same process can also speak MCP over stdio.
  *
- * `host` may be widened to reach the viewer from another device on the network. The
- * server has no authentication and serves everything under `root`, so that is strictly
- * opt-in. `allowedHosts` names any proxy or tunnel the browser reaches it through.
+ * The server has no authentication and serves everything under `root`, so it only ever
+ * binds loopback. A port forwarder or a tunnel named in `allowedHosts` is how a browser
+ * elsewhere reaches it.
  */
 export async function startServer(
   root: string,
@@ -324,10 +332,18 @@ export async function startServer(
   host = '127.0.0.1',
   allowedHosts: readonly string[] = [],
 ): Promise<ServerHandle> {
+  assertLoopback(host);
+  if (allowedHosts.length > 0) {
+    process.stderr.write(
+      `mermaid-docs viewer: also answering to ${allowedHosts.join(', ')}. The viewer has no ` +
+        'authentication, so the tunnel or proxy in front of it must require sign-in.\n',
+    );
+  }
   const api = createApi(root, host, allowedHosts);
   const policy = accessPolicy(host, allowedHosts);
 
   const server = createServer((req, res) => {
+    for (const [name, value] of Object.entries(SECURITY_HEADERS)) res.setHeader(name, value);
     if (!requestIsAllowed(req, policy)) {
       sendJson(res, 403, { error: 'Forbidden' });
       return;
@@ -338,7 +354,7 @@ export async function startServer(
       await serveStatic(decodeURIComponent(url.pathname), res);
     })().catch((error: unknown) => {
       if (res.headersSent) return res.end();
-      sendJson(res, 500, { error: error instanceof Error ? error.message : String(error) });
+      sendJson(res, 500, { error: clientMessage(error, 'Internal server error.') });
     });
   });
 
@@ -352,17 +368,12 @@ export async function startServer(
 
   const address = server.address();
   const port = typeof address === 'object' && address ? address.port : requestedPort;
-  // 0.0.0.0 is not a usable address in a browser; report a reachable one. A container's
-  // own address is not reachable from outside it either, so there loopback is the answer
-  // and the forwarder carries it the rest of the way.
-  const wildcard = host === '0.0.0.0' || host === '::';
-  const displayHost = wildcard ? (policy.forwarded ? 'localhost' : lanAddress()) : host;
 
   return {
     server,
     port,
     host,
-    url: `http://${displayHost}:${port}`,
+    url: `http://${hostname(host)}:${port}`,
     broadcast: api.broadcast,
     async close() {
       api.closeClients();

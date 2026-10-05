@@ -1,3 +1,5 @@
+import { UserInputError } from '../core/errors.js';
+
 export interface ServerOptions {
   port: number;
   host: string;
@@ -16,10 +18,13 @@ export function serverOptions(
 ): ServerOptions {
   const rawPort = typeof flags.port === 'string' ? flags.port : env.MERMAID_DOCS_PORT;
   const port = rawPort ? Number(rawPort) : 0;
-  // --host 0.0.0.0 (or --lan) exposes the viewer to the local network. There is no
-  // authentication, so this is opt-in and announced.
-  const host =
-    typeof flags.host === 'string' ? flags.host : flags.lan === true ? '0.0.0.0' : '127.0.0.1';
+  if (flags.lan !== undefined) {
+    throw new UserInputError(
+      '--lan was removed in 0.4.0: the viewer has no authentication, so it only listens on loopback. ' +
+        'To open it from elsewhere, forward the port with VS Code, or put a tunnel in front and name it with --allow-host.',
+    );
+  }
+  const host = typeof flags.host === 'string' ? flags.host : '127.0.0.1';
   const allowedHosts =
     typeof flags['allow-host'] === 'string'
       ? flags['allow-host'].split(',').map((entry) => entry.trim())

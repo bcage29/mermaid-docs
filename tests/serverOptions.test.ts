@@ -7,12 +7,12 @@ describe('serverOptions', () => {
   });
 
   it('reads --port, --host and --allow-host', () => {
-    expect(serverOptions({ port: '4747', host: '0.0.0.0', 'allow-host': 'a.test, b.test' }, {}))
-      .toEqual({ port: 4747, host: '0.0.0.0', allowedHosts: ['a.test', 'b.test'] });
+    expect(serverOptions({ port: '4747', host: '::1', 'allow-host': 'a.test, b.test' }, {}))
+      .toEqual({ port: 4747, host: '::1', allowedHosts: ['a.test', 'b.test'] });
   });
 
-  it('binds every interface for --lan', () => {
-    expect(serverOptions({ lan: true }, {}).host).toBe('0.0.0.0');
+  it.each([true, './docs'])('refuses the removed --lan flag (%s) and says what to use instead', (value) => {
+    expect(() => serverOptions({ lan: value }, {})).toThrow(/--lan was removed.*--allow-host/);
   });
 
   it('falls back to MERMAID_DOCS_PORT, which --port overrides', () => {
