@@ -50,11 +50,11 @@ suite on Node 22. Please make sure those pass locally before opening a pull requ
 
 ### Dependency audit
 
-CI also runs `npm audit`. It fails on any advisory rated high or critical in a runtime
-dependency (`npm audit --omit=dev --audit-level=high`), since those reach users' installs.
-Advisories in dev dependencies are reported as a warning without failing the build,
-because they affect only our own tooling. `npm audit signatures` checks the registry
-signatures of everything installed.
+CI also runs `npm audit`. It fails on any advisory rated high or critical
+(`npm audit --audit-level=high`) and reports lower ones as a warning. Dev dependencies are
+gated too, because they are not only tooling: mermaid, React, and their dependencies are
+bundled into the viewer that ships in `dist/web`. `npm audit signatures` checks the
+registry signatures of everything installed.
 
 When a gating advisory has no fix:
 
@@ -64,6 +64,28 @@ When a gating advisory has no fix:
    reach the vulnerable code, and what is being waited on upstream. A maintainer may
    merge past the failing check while that issue is open. Close it, and remove any
    override, once upstream ships a fix.
+
+### The lockfile is `npm-shrinkwrap.json`
+
+There is no `package-lock.json`. The lockfile is published as `npm-shrinkwrap.json`, which
+npm honours when users install the package, so their install resolves exactly the runtime
+dependency tree CI tested, transitive dependencies included, rather than whatever the
+semver ranges in `package.json` match on the day. CI fails if the packed tarball does not
+contain it. `npm install` and Dependabot update it the same way they would update
+`package-lock.json`.
+
+We chose this over the alternatives because:
+
+- Bundling the runtime dependencies into `dist/` gives the same guarantee, but makes the
+  package larger and requires shipping third-party licence notices.
+- Pinning only the direct dependencies to exact versions leaves every transitive
+  dependency floating, and that is where most of the tree is.
+
+The cost is that a security fix in a dependency reaches users only through a new
+mermaid-docs release. When Dependabot or `npm audit` flags a runtime dependency, merge
+the fix and cut a patch release instead of waiting for the next feature release.
+Package managers other than npm may ignore the shrinkwrap; a user installing with them
+gets the ranges in `package.json`, as before.
 
 ## Pull requests
 

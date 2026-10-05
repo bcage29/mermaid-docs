@@ -69,9 +69,13 @@ jobs:
       - run: npm run build
       - name: Verify published tarball contents
         run: npm pack --dry-run
+      # The shrinkwrap pins users' installs to the dependency tree CI tested.
+      - name: Verify the tarball ships npm-shrinkwrap.json
+        run: npm pack --dry-run --json | jq -e '.[0].files | any(.path == "npm-shrinkwrap.json")'
 
-  # Runtime dependencies reach users' installs, so their advisories gate the build.
-  # Dev dependencies only affect our tooling and are reported without failing.
+  # Dev dependencies are not only tooling: mermaid, React, and what they pull in are
+  # bundled into the viewer in dist/web. So high and critical advisories gate the build
+  # whichever section a package is in, and lower ones are reported without failing.
   # See "Dependency audit" in CONTRIBUTING.md for advisories that have no fix.
   audit:
     runs-on: ubuntu-latest
@@ -85,10 +89,10 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Audit runtime dependencies
-        run: npm audit --omit=dev --audit-level=high
-      - name: Report dev dependency advisories
-        run: npm audit || echo "::warning title=npm audit::Dev dependency advisories found; see the log above."
+      - name: Fail on high or critical advisories
+        run: npm audit --audit-level=high
+      - name: Report lower advisories
+        run: npm audit || echo "::warning title=npm audit::Low or moderate advisories found; see the log above."
       - name: Verify registry signatures
         run: npm audit signatures
 
