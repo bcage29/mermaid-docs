@@ -106,7 +106,6 @@ src/cli/      The mermaid-docs command.
 src/mcp/      MCP server: tools, prompt, and the instructions the agent is taught.
 src/server/   Local HTTP server, workspace scanning, file watching.
 src/web/      The React viewer.
-scripts/      Maintenance scripts, such as recording the README's walkthrough GIF.
 ```
 
 `src/core/route.ts` holds the viewer's URL format and is deliberately in `core` rather
