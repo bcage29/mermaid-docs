@@ -8,6 +8,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import { basename } from 'node:path';
 import { INSTRUCTIONS } from './instructions.js';
+import { VERSION } from './version.js';
 import { UserInputError } from '../core/errors.js';
 import { mcpErrorMessage } from './errors.js';
 import { deleteStep, reorderSteps, scaffoldDoc, setStep } from '../core/mutate.js';
@@ -90,7 +91,7 @@ export async function runMcp({
   if (hint) process.stderr.write(`${hint}\n`);
 
   const server = new McpServer(
-    { name: 'mermaid-docs', version: '0.1.0' },
+    { name: 'mermaid-docs', version: VERSION },
     { instructions: INSTRUCTIONS },
   );
 

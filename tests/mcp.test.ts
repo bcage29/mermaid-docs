@@ -5,6 +5,7 @@ import { spawn } from 'node:child_process';
 import { createServer, type Server } from 'node:http';
 import { mkdtemp, mkdir, readFile, symlink, writeFile } from 'node:fs/promises';
 import { rm } from 'node:fs/promises';
+import { readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -52,6 +53,11 @@ describe('mcp server', () => {
     expect(instructions).toBeTruthy();
     expect(instructions).toContain('@step:start');
     expect(instructions).toContain('## user-entry - User arrives');
+    // The major tag, so the instructions never name a release that has to be kept current.
+    const { version } = JSON.parse(readFileSync('package.json', 'utf8'));
+    expect(instructions).toContain(`uses: bcage29/mermaid-docs@v${version.split('.')[0]}\n`);
+    expect(instructions).toContain('Never add that input yourself');
+    expect(instructions).toContain('${{ steps.deployment.outputs.page_url }}');
   });
 
   it('registers the documented tool surface', async () => {

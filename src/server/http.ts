@@ -5,7 +5,7 @@ import { basename, extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { inspect } from 'node:util';
 import { UserInputError } from '../core/errors.js';
-import { loadDiagram, scanDiagrams } from './workspace.js';
+import { listDiagrams, loadDiagram, scanDiagrams } from './workspace.js';
 
 /**
  * Whether something is expected to forward a port to this process.
@@ -70,7 +70,7 @@ function accessPolicy(configuredHost?: string, allowedHosts: readonly string[] =
 }
 
 /** Where `vite build` puts the viewer, relative to the compiled server. */
-const WEB_ROOT = fileURLToPath(new URL('../web/', import.meta.url));
+export const WEB_ROOT = fileURLToPath(new URL('../web/', import.meta.url));
 
 /** When this process loaded its code, for the staleness check below. */
 const STARTED_AT = Date.now();
@@ -219,29 +219,7 @@ export function createApi(
     }
 
     if (path === '/api/diagrams') {
-      const refs = await scanDiagrams(root);
-      // Only the first file claiming a name is reachable by it, so only it is listed.
-      // `validate` is where a clash is reported.
-      const unique = refs.filter((r, i) => refs.findIndex((o) => o.name === r.name) === i);
-      // The picker shows the documented title and step count, so the list carries both
-      // rather than the browser fetching every diagram to find out.
-      sendJson(
-        res,
-        200,
-        await Promise.all(
-          unique.map(async ({ id, relPath, name, group, hasDocumentation }) => {
-            const diagram = await loadDiagram(root, id);
-            return {
-              relPath,
-              name,
-              group,
-              hasDocumentation,
-              title: diagram.title,
-              stepCount: diagram.steps.length,
-            };
-          }),
-        ),
-      );
+      sendJson(res, 200, await listDiagrams(root));
       return true;
     }
 

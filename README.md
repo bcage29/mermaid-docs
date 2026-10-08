@@ -81,6 +81,7 @@ it just wrote. So the whole job can be one sentence:
 | [Authoring walkthroughs](docs/authoring.md) | Markers, step documentation, phases |
 | [MCP server](docs/mcp.md) | Agent setup, and the tools it gets |
 | [CLI](docs/cli.md) | Every command, and validating in CI |
+| [GitHub Pages](docs/github-pages.md) | Publish the walkthroughs for everyone |
 | [Viewer](docs/viewer.md) | Shortcuts, supported diagram types, limits |
 | [Privacy](docs/privacy.md) | What leaves your machine |
 

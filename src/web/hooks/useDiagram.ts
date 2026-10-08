@@ -3,7 +3,8 @@ import { buildHash, parseHash } from '../../core/route.js';
 import type { Route } from '../../core/route.js';
 import { useChanges } from './useEvents.js';
 import type { Diagram, DiagramSummary } from '../types.js';
-import { STATIC_DEMO, staticDiagram, staticDiagramList } from '../staticExamples.js';
+import { staticPaths } from '../../core/staticSite.js';
+import { STATIC_SITE } from '../staticSite.js';
 
 export type { Route };
 
@@ -14,13 +15,15 @@ async function getJson<T>(url: string): Promise<T> {
 }
 
 function getDiagramList(): Promise<DiagramSummary[]> {
-  return STATIC_DEMO ? Promise.resolve(staticDiagramList()) : getJson<DiagramSummary[]>('/api/diagrams');
+  return getJson<DiagramSummary[]>(STATIC_SITE ? staticPaths.diagrams : '/api/diagrams');
 }
 
 function getDiagram(name: string): Promise<Diagram> {
-  return STATIC_DEMO
-    ? Promise.resolve().then(() => staticDiagram(name))
-    : getJson<Diagram>(`/api/diagrams/${encodeURIComponent(name)}`);
+  if (!STATIC_SITE) return getJson<Diagram>(`/api/diagrams/${encodeURIComponent(name)}`);
+  // A static host answers a missing file with its own HTML 404 page, not a JSON error.
+  return getJson<Diagram>(staticPaths.diagramUrl(name)).catch(() => {
+    throw new Error(`No diagram named "${name}".`);
+  });
 }
 
 /** The diagram list, refreshed whenever the workspace changes. */
