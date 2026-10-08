@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { STATIC_DEMO } from '../staticExamples.js';
+import { STATIC_SITE } from '../staticSite.js';
 
 export type ConnectionStatus = 'connecting' | 'live' | 'lost';
 type ChangeListener = (id: string) => void;
@@ -17,7 +17,8 @@ type ChangeListener = (id: string) => void;
 const changeListeners = new Set<ChangeListener>();
 const statusListeners = new Set<(status: ConnectionStatus) => void>();
 let source: EventSource | undefined;
-let status: ConnectionStatus = STATIC_DEMO ? 'live' : 'connecting';
+// A published site has nothing to reload from, and nothing to report as lost either.
+let status: ConnectionStatus = STATIC_SITE ? 'live' : 'connecting';
 
 function setStatus(next: ConnectionStatus): void {
   if (status === next) return;
@@ -26,7 +27,7 @@ function setStatus(next: ConnectionStatus): void {
 }
 
 function connect(): void {
-  if (STATIC_DEMO || source) return;
+  if (STATIC_SITE || source) return;
   source = new EventSource('/api/events');
   source.onopen = () => setStatus('live');
   // The browser reconnects on its own; a server that moved never answers, so this stays.

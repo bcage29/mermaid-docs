@@ -2,6 +2,7 @@
 import { resolve } from 'node:path';
 import { runServe } from './commands/serve.js';
 import { runValidate } from './commands/validate.js';
+import { runBuild } from './commands/build.js';
 import { runSetStep } from './commands/setStep.js';
 import { runDeleteStep } from './commands/deleteStep.js';
 import { runInit } from './commands/init.js';
@@ -13,6 +14,7 @@ Usage:
   mermaid-docs <folder>                     Serve the viewer on a free port
   mermaid-docs mcp <folder>                 Run the MCP server (stdio) plus the viewer
   mermaid-docs validate <folder>            Check every diagram; exit 1 on errors
+  mermaid-docs build <folder>               Write a static viewer site, e.g. for GitHub Pages
   mermaid-docs init <diagram.mmd>           Create the sibling .md documentation file
   mermaid-docs set-step <diagram.mmd>       Create or update a step
   mermaid-docs delete-step <diagram.mmd>    Remove a step
@@ -23,6 +25,10 @@ Serve and mcp options:
   --host <addr>    Loopback interface to bind: 127.0.0.1 (default), ::1 or localhost
   --allow-host <h> Hostname the browser may use, for a proxy or tunnel in front (repeatable
                    as a comma-separated list)
+
+build options:
+  --out <dir>      Where to write the site (default: _site)
+  --title <text>   Name shown in the viewer (default: the folder's name)
 
 set-step options:
   --id <id>            Step id, matching the %% @step marker (required)
@@ -41,7 +47,7 @@ export interface Args {
 }
 
 export function parseArgs(argv: string[]): Args {
-  const KNOWN = new Set(['mcp', 'validate', 'set-step', 'delete-step', 'init', 'serve']);
+  const KNOWN = new Set(['mcp', 'validate', 'build', 'set-step', 'delete-step', 'init', 'serve']);
   const flags: Record<string, string | boolean> = {};
   const positionals: string[] = [];
 
@@ -85,7 +91,10 @@ async function main(): Promise<void> {
       return runMcp({ root: target, ...serverOptions(flags) });
     }
     case 'validate':
-      return runValidate({ root: target });
+      await runValidate({ root: target });
+      return;
+    case 'build':
+      return runBuild({ root: target, flags });
     case 'init':
       return runInit({ mmdPath: target });
     case 'set-step':

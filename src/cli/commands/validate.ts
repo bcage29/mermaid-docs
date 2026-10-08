@@ -14,7 +14,7 @@ export interface ValidateOptions {
  * Exits non-zero on errors so this works as a CI gate and as a way for an agent to check
  * its own work after editing the files directly.
  */
-export async function runValidate({ root }: ValidateOptions): Promise<void> {
+export async function runValidate({ root }: ValidateOptions): Promise<{ errors: number; warnings: number }> {
   const single = !(await isDirectory(root));
   const refs = single
     ? [{ absPath: root, relPath: relative(process.cwd(), root) }]
@@ -63,4 +63,5 @@ export async function runValidate({ root }: ValidateOptions): Promise<void> {
   // Diagram types whose connections cannot be located report nothing rather than 0/0.
   if (total > 0) process.stdout.write(`${covered}/${total} connections documented\n`);
   if (errors > 0) process.exitCode = 1;
+  return { errors, warnings };
 }

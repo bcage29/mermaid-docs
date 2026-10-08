@@ -152,6 +152,33 @@ export async function loadDiagram(root: string, id: string): Promise<Diagram> {
   return buildDiagram({ id: toId(root, abs), relPath: toId(root, abs), mmd, ...(md !== undefined ? { md } : {}) });
 }
 
+export interface DiagramSummary {
+  relPath: string;
+  name: string;
+  group: string;
+  hasDocumentation: boolean;
+  title: string;
+  stepCount: number;
+}
+
+/**
+ * What the viewer's picker lists: one entry per addressable diagram.
+ *
+ * Only the first file claiming a name is reachable by it, so only it is listed; `validate`
+ * is where a clash is reported. The picker shows the documented title and step count, so
+ * the list carries both rather than the browser fetching every diagram to find out.
+ */
+export async function listDiagrams(root: string): Promise<DiagramSummary[]> {
+  const refs = await scanDiagrams(root);
+  const unique = refs.filter((r, i) => refs.findIndex((o) => o.name === r.name) === i);
+  return Promise.all(
+    unique.map(async ({ id, relPath, name, group, hasDocumentation }) => {
+      const diagram = await loadDiagram(root, id);
+      return { relPath, name, group, hasDocumentation, title: diagram.title, stepCount: diagram.steps.length };
+    }),
+  );
+}
+
 export interface WriteResult {
   mmdPath: string;
   docPath: string;

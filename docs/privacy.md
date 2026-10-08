@@ -10,3 +10,7 @@ This is not a redaction tool: diagram source, documentation, and titles are retu
 whenever they are asked for. Review those files before sharing the viewer or pointing an
 agent at them, and remember that replacing a screenshot does not remove older copies from
 Git history.
+
+`mermaid-docs build` writes those same files into a site meant to be published; nothing
+about the machine that built it is included, but every diagram in the folder is. See
+[Publish to GitHub Pages](github-pages.md).

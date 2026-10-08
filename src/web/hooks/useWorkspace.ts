@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { STATIC_DEMO } from '../staticExamples.js';
+import { staticPaths } from '../../core/staticSite.js';
+import { STATIC_SITE } from '../staticSite.js';
 
 export interface Workspace {
   /** Display name of the selected workspace, without its parent directories. */
@@ -15,13 +16,10 @@ export interface Workspace {
  * left running across a rebuild serves a new UI from an old API.
  */
 export function useWorkspace(): Workspace | undefined {
-  const [workspace, setWorkspace] = useState<Workspace | undefined>(
-    STATIC_DEMO ? { root: 'Bundled examples', stale: false } : undefined,
-  );
+  const [workspace, setWorkspace] = useState<Workspace>();
 
   useEffect(() => {
-    if (STATIC_DEMO) return;
-    fetch('/api/workspace')
+    fetch(STATIC_SITE ? staticPaths.workspace : '/api/workspace')
       .then((res) => (res.ok ? (res.json() as Promise<Workspace>) : undefined))
       .then(setWorkspace)
       .catch(() => undefined);

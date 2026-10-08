@@ -4,7 +4,9 @@ import { mermaidDocsApi } from './vite-plugin-api.js';
 
 export default defineConfig({
   root: 'src/web',
-  base: process.env.VITE_MERMAID_DOCS_BASE ?? '/',
+  // Relative, so the one bundle works at the live server's root and from whatever subpath
+  // a published site lands on - `/<repo>/` for a GitHub Pages project site.
+  base: './',
   // The API and its file watcher run inside `npm run dev`, mounted by mermaidDocsApi() as
   // middleware. Set MERMAID_DOCS_ROOT to document a workspace other than examples/.
   plugins: [react(), mermaidDocsApi()],

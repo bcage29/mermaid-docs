@@ -1,0 +1,81 @@
+name: Mermaid Docs Pages
+description: Build a static Mermaid Docs viewer from a folder of diagrams and upload it for GitHub Pages.
+author: Brennen Cage
+branding:
+  icon: book-open
+  color: purple
+
+inputs:
+  folder:
+    description: Folder of .mmd diagrams and their .md walkthroughs, relative to the repository root.
+    required: true
+  title:
+    description: Name shown in the viewer. Defaults to the folder's name.
+    required: false
+    default: ''
+  out:
+    description: Where to write the site.
+    required: false
+    default: _site
+  upload:
+    description: Upload the site with actions/upload-pages-artifact. Set to false to publish it some other way.
+    required: false
+    default: 'true'
+  version:
+    description: >-
+      mermaid-docs version to run. Defaults to the version this action was released with,
+      so pinning the action pins the viewer too.
+    required: false
+    default: ''
+  confirm-public-site:
+    description: >-
+      Publish even though the repository is private or internal and its Pages site is
+      public. Without it, the action refuses rather than expose the repository's diagrams.
+    required: false
+    default: 'false'
+
+outputs:
+  path:
+    description: Absolute path of the built site.
+    value: ${{ steps.build.outputs.path }}
+
+runs:
+  using: composite
+  steps:
+    # Before anything is built: a private repository's Pages site is public on most plans,
+    # so publishing one has to be confirmed in the workflow, where a reviewer sees it.
+    - name: Check site visibility
+      if: inputs.upload == 'true'
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+        EVENT_VISIBILITY: ${{ github.event.repository.visibility }}
+        CONFIRM_PUBLIC_SITE: ${{ inputs.confirm-public-site }}
+      run: node "$GITHUB_ACTION_PATH/action/visibility.mjs"
+
+    # Inputs reach the script through env, never by interpolation, so a value cannot
+    # inject shell.
+    - name: Build Mermaid Docs site
+      id: build
+      shell: bash
+      env:
+        FOLDER: ${{ inputs.folder }}
+        TITLE: ${{ inputs.title }}
+        OUT: ${{ inputs.out }}
+        VERSION: ${{ inputs.version }}
+        ACTION_PATH: ${{ github.action_path }}
+      run: |
+        set -euo pipefail
+        if [ -z "$VERSION" ]; then
+          VERSION="$(node -p 'require(process.argv[1]).version' "$ACTION_PATH/package.json")"
+        fi
+        args=(build "$FOLDER" "--out=$OUT")
+        if [ -n "$TITLE" ]; then args+=("--title=$TITLE"); fi
+        npx --yes "mermaid-docs@$VERSION" "${args[@]}"
+        echo "path=$(cd "$OUT" && pwd)" >> "$GITHUB_OUTPUT"
+
+    - name: Upload Pages artifact
+      if: inputs.upload == 'true'
+      uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+      with:
+        path: ${{ steps.build.outputs.path }}

@@ -4,6 +4,7 @@
 mermaid-docs <folder>                  # Open the viewer
 mermaid-docs mcp <folder>              # Start the MCP server and the viewer
 mermaid-docs validate <folder>         # Validate every diagram
+mermaid-docs build <folder> --out _site  # Write a static site to publish
 mermaid-docs init <diagram.mmd>        # Create its Markdown file
 mermaid-docs set-step <diagram.mmd> --id token-issue --title "Token is issued" \
     --body "..." --start 11 --end 12
@@ -67,3 +68,8 @@ $ mermaid-docs validate examples
 3 diagrams checked, 0 errors, 0 warnings
 39/39 connections documented
 ```
+
+## Publish a static site
+
+`build` writes the viewer and every diagram to a folder that any static host can serve, and
+refuses to if `validate` would fail. See [Publish to GitHub Pages](github-pages.md).

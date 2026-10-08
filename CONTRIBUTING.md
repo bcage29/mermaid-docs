@@ -40,7 +40,6 @@ the command from.
 | --- | --- |
 | `npm run dev` | Vite dev server for the viewer |
 | `npm run build` | Build the Node entry points (`tsup`) and the web bundle (`vite`) |
-| `npm run build:pages` | Static build with `examples/` bundled in, for GitHub Pages |
 | `npm test` | Unit tests (`vitest`) |
 | `npm run test:e2e` | End-to-end tests (`playwright`) |
 | `npm run typecheck` | `tsc --noEmit` |
