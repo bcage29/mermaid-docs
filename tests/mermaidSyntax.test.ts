@@ -77,6 +77,22 @@ describe('checkMermaidSyntax', () => {
   });
 });
 
+describe('when Mermaid cannot load', () => {
+  afterEach(() => {
+    vi.doUnmock('mermaid');
+    vi.resetModules();
+  });
+
+  it('fails rather than skipping the syntax check', async () => {
+    vi.resetModules();
+    vi.doMock('mermaid', () => {
+      throw new Error('unsupported engine');
+    });
+    const { checkMermaidSyntax: check } = await import('../src/server/mermaidSyntax.js');
+    await expect(check('flowchart TD\nA --> B')).rejects.toThrow(/^Mermaid failed to load, so diagram syntax cannot be checked/);
+  });
+});
+
 describe('validate command', () => {
   let root: string;
 

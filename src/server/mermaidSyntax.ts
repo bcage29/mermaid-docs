@@ -29,9 +29,13 @@ interface MermaidLike {
   };
 }
 
-let loading: Promise<MermaidLike | undefined> | undefined;
+let loading: Promise<MermaidLike> | undefined;
 
-function loadMermaid(): Promise<MermaidLike | undefined> {
+/**
+ * Load Mermaid once. A failure is thrown, never skipped: validation that quietly drops the
+ * syntax check reports a clean diagram that cannot render, which is what it exists to catch.
+ */
+function loadMermaid(): Promise<MermaidLike> {
   loading ??= (async () => {
     try {
       const { default: purify } = await import('dompurify');
@@ -48,9 +52,11 @@ function loadMermaid(): Promise<MermaidLike | undefined> {
       const { default: mermaid } = await import('mermaid');
       return mermaid as unknown as MermaidLike;
     } catch (error) {
-      // A missing or incompatible Mermaid should cost the syntax check, not validation.
-      process.stderr.write(`mermaid-docs: skipping Mermaid syntax check (${(error as Error).message})\n`);
-      return undefined;
+      // Let a long-running MCP server try again on the next call.
+      loading = undefined;
+      throw new Error(`Mermaid failed to load, so diagram syntax cannot be checked: ${(error as Error).message}`, {
+        cause: error,
+      });
     }
   })();
   return loading;
@@ -154,7 +160,6 @@ function swallowedLabels(edges: FlowEdge[], fileLines: string[]): ValidationIssu
  */
 export async function checkMermaidSyntax(mmd: string): Promise<ValidationIssue[]> {
   const mermaid = await loadMermaid();
-  if (!mermaid) return [];
 
   const { text, leadingBlankLines } = lineFaithful(mmd);
   let diagramType: string;
