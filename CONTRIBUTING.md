@@ -18,7 +18,7 @@ writing code, so the approach can be agreed on first.
 
 ## Setup
 
-Node.js 20 or newer.
+Node.js 22.12 or newer.
 
 ```bash
 npm install
@@ -44,7 +44,7 @@ the command from.
 | `npm run test:e2e` | End-to-end tests (`playwright`) |
 | `npm run typecheck` | `tsc --noEmit` |
 
-CI runs `typecheck`, `build`, and `test` on Node 20, 22, and 24, plus the Playwright
+CI runs `typecheck`, `build`, and `test` on Node 22 and 24, plus the Playwright
 suite on Node 22. Please make sure those pass locally before opening a pull request.
 
 ### Dependency audit
