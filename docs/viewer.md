@@ -32,4 +32,4 @@ emphasised.
 - The server only binds loopback and has no authentication. Reach it from elsewhere through
   VS Code's port forwarding or a tunnel named with `--allow-host`; see
   [In a container](cli.md#in-a-container).
-- Requires Node.js 20 or newer.
+- Requires Node.js 22.12 or newer.

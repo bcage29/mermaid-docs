@@ -48,7 +48,7 @@ npx mermaid-docs docs
 It serves on a free port on `127.0.0.1` and opens your browser. Edits to either file show
 up immediately — no restart.
 
-Requires Node.js 20 or newer.
+Requires Node.js 22.12 or newer.
 
 ## Next
 

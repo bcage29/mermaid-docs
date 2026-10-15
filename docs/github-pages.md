@@ -86,7 +86,7 @@ way they do locally — `https://<owner>.github.io/<repo>/#/auth-flow/token-issu
 
 The `path` output is the built site's absolute path.
 
-GitHub-hosted runners have Node.js already. A self-hosted runner needs Node.js 20 or newer
+GitHub-hosted runners have Node.js already. A self-hosted runner needs Node.js 22.12 or newer
 on its `PATH`.
 
 ### Pinning
