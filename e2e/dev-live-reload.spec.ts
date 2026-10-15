@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { expectOverviewFitted } from './fixtures.js';
 import { createServer } from 'vite';
 import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -41,5 +42,27 @@ test('Vite reloads the open diagram and documentation after disk changes', async
     if (previousRoot === undefined) delete process.env.MERMAID_DOCS_ROOT;
     else process.env.MERMAID_DOCS_ROOT = previousRoot;
     await rm(root, { recursive: true, force: true });
+  }
+});
+// The dev server injects the app's stylesheet at runtime, as the pan/zoom library does its
+// own, so a rule of ours that ties with the library's wins here and loses in the built
+// bundle. A cold load of the overview is where that showed: the canvas measured itself as
+// the size of the viewport and "fitted" a wide diagram at 100%, running off the edge.
+test('Vite serves an overview fitted on a cold load', async ({ page }) => {
+  const previousRoot = process.env.MERMAID_DOCS_ROOT;
+  process.env.MERMAID_DOCS_ROOT = 'examples';
+  let server: Awaited<ReturnType<typeof createServer>> | undefined;
+  try {
+    server = await createServer({ server: { host: '127.0.0.1', port: 0, open: false } });
+    await server.listen();
+    const baseURL = server.resolvedUrls!.local[0];
+    await page.setViewportSize({ width: 1600, height: 1000 });
+    await page.goto(`${baseURL}#/agentic-rag`);
+    await expectOverviewFitted(page, { shrunk: true });
+  } finally {
+    await page.close();
+    await server?.close();
+    if (previousRoot === undefined) delete process.env.MERMAID_DOCS_ROOT;
+    else process.env.MERMAID_DOCS_ROOT = previousRoot;
   }
 });

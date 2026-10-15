@@ -1,4 +1,4 @@
-import { expect, test } from './fixtures.js';
+import { expect, expectOverviewFitted, test } from './fixtures.js';
 import type { Page } from '@playwright/test';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -854,6 +854,23 @@ test.describe('viewer', () => {
       )
       .toEqual({ offCentreX: 0, offCentreY: expect.any(Number), contained: true });
   });
+
+  // A cold load, not a click on Reset: the first placement is the one that has to measure
+  // a diagram that was only just inserted.
+  for (const viewport of [
+    { name: 'desktop', width: 1600, height: 1000 },
+    { name: 'phone', width: 375, height: 812 },
+  ]) {
+    test(`a cold load fits a wide overview and centres a small one (${viewport.name})`, async ({ page, baseURL }) => {
+      await page.setViewportSize(viewport);
+      await page.goto(`${baseURL}/#/agentic-rag`);
+      await expectOverviewFitted(page, { shrunk: true });
+
+      await page.goto('about:blank');
+      await page.goto(`${baseURL}/#/${AUTH}`);
+      await expectOverviewFitted(page, { shrunk: viewport.name === 'phone' });
+    });
+  }
 
   test('the participant row is not frozen on a flowchart', async ({ page, baseURL }) => {
     await page.goto(`${baseURL}/#/${AUTH}`);

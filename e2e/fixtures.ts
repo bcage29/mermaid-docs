@@ -1,4 +1,4 @@
-import { test as base, expect } from '@playwright/test';
+import { test as base, expect, type Page } from '@playwright/test';
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { cp, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -57,3 +57,33 @@ export const test = base.extend<ServerFixture>({
 });
 
 export { expect };
+
+/**
+ * The overview has been placed: inside the canvas and centred across it, and scaled down
+ * only when it would not otherwise fit. Fitting never enlarges, so a diagram that fits
+ * stays at 100%.
+ */
+export async function expectOverviewFitted(page: Page, { shrunk }: { shrunk: boolean }): Promise<void> {
+  await expect(page.locator('.mermaid-host.is-fitted svg')).toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const area = document.querySelector('.canvas-viewport')!.getBoundingClientRect();
+        const svg = document.querySelector('.mermaid-host svg')!.getBoundingClientRect();
+        return {
+          inside:
+            svg.left >= area.left - 1 &&
+            svg.right <= area.right + 1 &&
+            svg.top >= area.top - 1 &&
+            svg.bottom <= area.bottom + 1,
+          centredX: Math.abs(svg.left - area.left - (area.right - svg.right)) <= 2,
+        };
+      }),
+    )
+    .toEqual({ inside: true, centredX: true });
+
+  const zoom = Number((await page.getByTestId('zoom-level').textContent())!.replace('%', ''));
+  if (shrunk) expect(zoom).toBeLessThan(100);
+  else expect(zoom).toBe(100);
+}
+
