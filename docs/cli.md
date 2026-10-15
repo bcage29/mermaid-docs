@@ -59,6 +59,11 @@ instead.
 `validate` exits `1` on errors, so it can guard a pull request. A step marked in the
 diagram but never documented is a warning, not an error — as is an arrow no step covers.
 
+Each diagram also goes through Mermaid's own parser, so a syntax mistake fails here, with
+the line it is on, rather than in the browser. A flowchart link whose label runs on over
+several lines and other links is a warning: Mermaid accepts it, but usually because the
+link syntax was wrong and the links after it were folded into the label.
+
 ```yaml
 - run: npx -y mermaid-docs validate ./docs
 ```

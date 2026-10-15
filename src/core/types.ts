@@ -61,7 +61,9 @@ export interface ValidationIssue {
     | 'orphan-section'
     | 'orphan-region'
     | 'empty-region'
-    | 'invalid-id';
+    | 'invalid-id'
+    | 'mermaid-syntax'
+    | 'suspicious-edge-label';
   message: string;
   /** 1-based line in the file the issue refers to, when known. */
   line?: number;

@@ -12,7 +12,8 @@ import { VERSION } from './version.js';
 import { UserInputError } from '../core/errors.js';
 import { mcpErrorMessage } from './errors.js';
 import { deleteStep, reorderSteps, scaffoldDoc, setStep } from '../core/mutate.js';
-import { computeCoverage, validateDiagram } from '../core/validate.js';
+import { computeCoverage } from '../core/validate.js';
+import { validateDiagramSource } from '../server/mermaidSyntax.js';
 import { listConnections } from '../core/connections.js';
 import { parseRegions } from '../core/markers.js';
 import { buildHash, diagramName } from '../core/route.js';
@@ -270,7 +271,7 @@ export async function runMcp({
           basename(files.absPath, '.mmd'),
         );
         await writeDiagram(root, id, { mmd: out.mmd, ...(out.md !== undefined ? { md: out.md } : {}) });
-        const issues = validateDiagram(out.mmd, out.md);
+        const issues = await validateDiagramSource(out.mmd, out.md);
         return result(
           `Step "${stepId}" written.${issues.length ? `\n\nIssues:\n${issues.map((i) => `- ${i.severity}: ${i.message}`).join('\n')}` : ''}`,
           { stepId, issues },
@@ -334,14 +335,14 @@ export async function runMcp({
     {
       title: 'Validate a diagram',
       description:
-        'Check that step markers are balanced, that ids match between the .mmd and the .md, and how many of the connections the diagram draws are documented.',
+        'Check that Mermaid can parse the diagram, that step markers are balanced, that ids match between the .mmd and the .md, and how many of the connections the diagram draws are documented.',
       inputSchema: { id: z.string() },
       annotations: READ_ONLY,
     },
     async ({ id }) => {
       try {
         const files = await readDiagramFiles(root, id);
-        const issues = validateDiagram(files.mmd, files.md);
+        const issues = await validateDiagramSource(files.mmd, files.md);
         const coverage = computeCoverage(files.mmd, parseRegions(files.mmd).regions);
         const lines = issues.map((i) => `${i.severity}: ${i.file}${i.line ? `:${i.line}` : ''} ${i.message}`);
         if (coverage.total > 0) lines.push(`${coverage.covered}/${coverage.total} connections documented.`);

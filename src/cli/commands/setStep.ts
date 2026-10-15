@@ -1,7 +1,7 @@
 import { basename } from 'node:path';
 import { readFile, writeFile } from 'node:fs/promises';
 import { setStep } from '../../core/mutate.js';
-import { validateDiagram } from '../../core/validate.js';
+import { validateDiagramSource } from '../../server/mermaidSyntax.js';
 import { docPathFor } from '../../server/workspace.js';
 
 export interface SetStepOptions {
@@ -73,7 +73,7 @@ export async function runSetStep({ mmdPath, flags }: SetStepOptions): Promise<vo
   await writeFile(mmdPath, out.mmd, 'utf8');
   if (out.md !== undefined) await writeFile(docPath, out.md, 'utf8');
 
-  const issues = validateDiagram(out.mmd, out.md);
+  const issues = await validateDiagramSource(out.mmd, out.md);
   for (const issue of issues) {
     if (issue.severity === 'error') process.stderr.write(`error: ${issue.message}\n`);
   }
