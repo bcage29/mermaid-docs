@@ -1,7 +1,8 @@
 import { readFile } from 'node:fs/promises';
 import { relative } from 'node:path';
-import { computeCoverage, validateDiagram } from '../../core/validate.js';
+import { computeCoverage } from '../../core/validate.js';
 import { parseRegions } from '../../core/markers.js';
+import { validateDiagramSource } from '../../server/mermaidSyntax.js';
 import { docPathFor, duplicateNames, isDirectory, scanDiagrams } from '../../server/workspace.js';
 
 export interface ValidateOptions {
@@ -49,7 +50,7 @@ export async function runValidate({ root }: ValidateOptions): Promise<{ errors: 
     total += coverage.total;
     covered += coverage.covered;
 
-    for (const issue of validateDiagram(mmd, md)) {
+    for (const issue of await validateDiagramSource(mmd, md)) {
       const where = issue.file === 'md' ? docPathFor(ref.relPath) : ref.relPath;
       const at = issue.line !== undefined ? `:${issue.line}` : '';
       process.stdout.write(`${issue.severity === 'error' ? 'error' : 'warning'}: ${where}${at} ${issue.message}\n`);
