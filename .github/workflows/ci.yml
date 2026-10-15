@@ -108,17 +108,11 @@ jobs:
         if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped')
         run: exit 1
 
-  deploy:
-    name: Deploy demo to GitHub Pages
+  # Building runs dependency code, so it gets no permission to deploy or mint OIDC tokens.
+  build-demo:
+    name: Build demo site
     needs: ci
     if: ${{ success() && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -128,7 +122,6 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
-          # No cache in a job that holds id-token: write, as in the release publish job.
           package-manager-cache: false
       - run: npm ci
       - run: npm run build
@@ -136,10 +129,23 @@ jobs:
       # than the release on npm, so the demo always shows the code that just passed CI.
       - name: Build static demo
         run: node dist/cli/index.js build examples --out _site --title Examples
-      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: _site
+
+  deploy:
+    name: Deploy demo to GitHub Pages
+    needs: build-demo
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
