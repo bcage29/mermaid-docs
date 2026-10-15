@@ -74,14 +74,9 @@ published to GitHub Pages with the bcage29/mermaid-docs action. Add a workflow s
       branches: [main]
   permissions:
     contents: read
-    pages: write
-    id-token: write
   jobs:
-    deploy:
+    build:
       runs-on: ubuntu-latest
-      environment:
-        name: github-pages
-        url: \${{ steps.deployment.outputs.page_url }}
       steps:
         - uses: actions/checkout@v7
           with:
@@ -89,6 +84,16 @@ published to GitHub Pages with the bcage29/mermaid-docs action. Add a workflow s
         - uses: bcage29/mermaid-docs@v${VERSION.split('.')[0]}
           with:
             folder: <the folder holding the .mmd files>
+    deploy:
+      needs: build
+      runs-on: ubuntu-latest
+      permissions:
+        pages: write
+        id-token: write
+      environment:
+        name: github-pages
+        url: \${{ steps.deployment.outputs.page_url }}
+      steps:
         - id: deployment
           uses: actions/deploy-pages@v5
 

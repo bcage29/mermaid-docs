@@ -33,19 +33,14 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: pages
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -54,11 +49,26 @@ jobs:
         with:
           folder: docs
           title: Architecture
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - id: deployment
         uses: actions/deploy-pages@v5
 ```
 
 Change `folder` to wherever your `.mmd` files live, and `paths` to match.
+
+The build and the deploy are separate jobs so that building, which downloads and runs
+`mermaid-docs` and its dependencies, never holds the permission to deploy or to request an
+OIDC token. Only `deploy-pages` gets those.
 
 The site appears at `https://<owner>.github.io/<repo>/`, and links to a step work the same
 way they do locally — `https://<owner>.github.io/<repo>/#/auth-flow/token-issue`.
